@@ -12,3 +12,6 @@
 - [ ] Currency: Ghana cedis (GH₵) everywhere
 - [ ] Dark/light mode toggle
 - [ ] Mobile-friendly responsive layout
+- [ ] Redesign navigation as clear reference-style sections with richer color
+- [ ] Verify light/dark mode and small-screen slide-out navigation
+- [ ] Walk the app: confirm Doors category, add a door item, and verify GH₵ on items and dashboard
