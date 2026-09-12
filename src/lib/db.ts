@@ -18,6 +18,19 @@ export interface Category {
   createdAt: string;
 }
 
+export type UserRole = "admin" | "staff";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  /** Local-only demo credential. Use a server-side auth provider before production deployment. */
+  password: string;
+  role: UserRole;
+  categoryIds: string[];
+  createdAt: string;
+}
+
 export type ItemStatus = "in-stock" | "reserved" | "damaged" | "archived";
 
 export interface Item {
@@ -60,6 +73,7 @@ class LedgerDB extends Dexie {
   categories!: Table<Category, string>;
   items!: Table<Item, string>;
   activity!: Table<Activity, string>;
+  users!: Table<User, string>;
 
   constructor() {
     super("northern-ledger");
@@ -67,6 +81,12 @@ class LedgerDB extends Dexie {
       categories: "id, name, createdAt",
       items: "id, categoryId, name, status, dateAdded, updatedAt",
       activity: "id, at, kind, itemId",
+    });
+    this.version(2).stores({
+      categories: "id, name, createdAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
     });
   }
 }
@@ -89,6 +109,89 @@ export const uid = () =>
 
 async function log(entry: Omit<Activity, "id" | "at">) {
   await db().activity.add({ ...entry, id: uid(), at: new Date().toISOString() });
+}
+
+/* ---------------- users & access ---------------- */
+
+export async function ensureDefaultAdmin() {
+  const existing = await db().users.where("email").equals("admin@veridian.local").first();
+  if (existing) return existing;
+  const admin: User = {
+    id: uid(),
+    name: "Administrator",
+    email: "admin@veridian.local",
+    password: "admin123",
+    role: "admin",
+    categoryIds: [],
+    createdAt: new Date().toISOString(),
+  };
+  await db().users.add(admin);
+  return admin;
+}
+
+export async function authenticate(email: string, password: string) {
+  const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
+  return user && user.password === password ? user : null;
+}
+
+export async function registerUser(input: Pick<User, "name" | "email" | "password">) {
+  const email = input.email.trim().toLowerCase();
+  const existing = await db().users.where("email").equals(email).first();
+  if (existing) throw new Error("An account with this email already exists.");
+
+  const user: User = {
+    id: uid(),
+    name: input.name.trim(),
+    email,
+    password: input.password,
+    role: "staff",
+    categoryIds: [],
+    createdAt: new Date().toISOString(),
+  };
+  await db().users.add(user);
+  return user;
+}
+
+export async function resetPassword(email: string, password: string) {
+  const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
+  if (!user) return false;
+  await db().users.update(user.id, { password });
+  return true;
+}
+
+export async function getUser(id: string) {
+  return db().users.get(id);
+}
+
+export async function listUsers() {
+  return db().users.orderBy("createdAt").toArray();
+}
+
+export async function createStaff(input: Pick<User, "name" | "email" | "password" | "categoryIds">) {
+  const user: User = {
+    id: uid(),
+    name: input.name.trim(),
+    email: input.email.trim().toLowerCase(),
+    password: input.password,
+    role: "staff",
+    categoryIds: input.categoryIds,
+    createdAt: new Date().toISOString(),
+  };
+  await db().users.add(user);
+  return user;
+}
+
+export async function updateStaff(id: string, patch: Partial<Pick<User, "name" | "email" | "password" | "categoryIds">>) {
+  await db().users.update(id, {
+    ...patch,
+    ...(patch.email ? { email: patch.email.trim().toLowerCase() } : {}),
+  });
+}
+
+export async function deleteStaff(id: string) {
+  const user = await db().users.get(id);
+  if (user?.role === "admin") throw new Error("The administrator account cannot be deleted.");
+  await db().users.delete(id);
 }
 
 /* ---------------- categories ---------------- */
@@ -221,6 +324,7 @@ export async function itemHistory(itemId: string) {
 /* ---------------- seed ---------------- */
 
 export async function seedIfEmpty() {
+  await ensureDefaultAdmin();
   const count = await db().categories.count();
   if (count > 0) return;
 
@@ -322,6 +426,7 @@ export interface Snapshot {
   categories: Category[];
   items: Item[];
   activity: Activity[];
+  users?: User[];
 }
 
 export async function exportSnapshot(): Promise<Snapshot> {
@@ -332,6 +437,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
     categories: await db().categories.toArray(),
     items: await db().items.toArray(),
     activity: await db().activity.toArray(),
+    users: await db().users.toArray(),
   };
 }
 
@@ -340,14 +446,16 @@ export async function importSnapshot(snap: Snapshot, mode: "replace" | "merge") 
     throw new Error("That file doesn't look like a Northern Ledger backup.");
   }
   const d = db();
-  await d.transaction("rw", d.categories, d.items, d.activity, async () => {
+  await d.transaction("rw", d.categories, d.items, d.activity, d.users, async () => {
     if (mode === "replace") {
-      await Promise.all([d.categories.clear(), d.items.clear(), d.activity.clear()]);
+      await Promise.all([d.categories.clear(), d.items.clear(), d.activity.clear(), d.users.clear()]);
     }
     await d.categories.bulkPut(snap.categories);
     await d.items.bulkPut(snap.items);
     if (Array.isArray(snap.activity)) await d.activity.bulkPut(snap.activity);
+    if (Array.isArray(snap.users)) await d.users.bulkPut(snap.users);
   });
+  await ensureDefaultAdmin();
   await log({
     kind: "data-imported",
     message: `Imported backup (${snap.items.length} items, ${snap.categories.length} categories)`,

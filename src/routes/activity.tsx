@@ -3,19 +3,19 @@ import { motion } from "motion/react";
 import { History } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
-import { useActivity } from "@/lib/ledger";
+import { useAccessibleActivity } from "@/lib/ledger";
 import { timeAgo } from "@/lib/format";
 
 export const Route = createFileRoute("/activity")({
   head: () => ({
     meta: [
-      { title: "Movement log — Veridian Inventory" },
+      { title: "Movement log — StockLine Inventory" },
       {
         name: "description",
         content:
           "A running record of every stock adjustment, edit and deletion, with the reason and the time it happened.",
       },
-      { property: "og:title", content: "Movement log — Veridian Inventory" },
+      { property: "og:title", content: "Movement log — StockLine Inventory" },
       { property: "og:description", content: "Every stock change, when it happened and why." },
     ],
   }),
@@ -30,7 +30,7 @@ export function toneFor(kind: string) {
 }
 
 function ActivityPage() {
-  const activity = useActivity(300);
+  const activity = useAccessibleActivity(300);
 
   return (
     <AppShell eyebrow="History" title="Movement log">

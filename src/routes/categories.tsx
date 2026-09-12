@@ -6,20 +6,21 @@ import { toast } from "sonner";
 import { AppShell, PrimaryButton } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { CategoryForm } from "@/components/CategoryForm";
-import { accentVar, useCategories, useItems } from "@/lib/ledger";
+import { accentVar, useAccessibleCategories, useAccessibleItems } from "@/lib/ledger";
 import { deleteCategory, type Category } from "@/lib/db";
 import { money } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/categories")({
   head: () => ({
     meta: [
-      { title: "Categories & custom fields — Veridian Inventory" },
+      { title: "Categories & custom fields — StockLine Inventory" },
       {
         name: "description",
         content:
           "Create categories such as Doors or Goats and give each one its own custom fields: text, number, date or dropdown.",
       },
-      { property: "og:title", content: "Categories & custom fields — Veridian Inventory" },
+      { property: "og:title", content: "Categories & custom fields — StockLine Inventory" },
       {
         property: "og:description",
         content: "Fully dynamic categories, each with its own attribute set.",
@@ -30,8 +31,9 @@ export const Route = createFileRoute("/categories")({
 });
 
 function CategoriesPage() {
-  const categories = useCategories();
-  const items = useItems();
+  const categories = useAccessibleCategories();
+  const items = useAccessibleItems();
+  const { isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
 
@@ -46,7 +48,7 @@ function CategoriesPage() {
     <AppShell
       eyebrow="Structure"
       title="Categories"
-      actions={
+      actions={isAdmin ? (
         <PrimaryButton
           onClick={() => {
             setEditing(null);
@@ -57,7 +59,7 @@ function CategoriesPage() {
             <Plus className="size-4" /> New category
           </span>
         </PrimaryButton>
-      }
+      ) : undefined}
     >
       {!categories || !items ? (
         <LoadingPanels count={3} />
@@ -66,7 +68,7 @@ function CategoriesPage() {
           icon={<Boxes className="size-6" />}
           title="No categories yet"
           body="Start with something real — Doors, Goats, Laptops — then add the fields those items carry."
-          action={
+          action={isAdmin ? (
             <PrimaryButton
               onClick={() => {
                 setEditing(null);
@@ -75,7 +77,7 @@ function CategoriesPage() {
             >
               Create a category
             </PrimaryButton>
-          }
+          ) : undefined}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -106,7 +108,7 @@ function CategoriesPage() {
                         {mine.length} items · {money(value)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 gap-1">
+                    {isAdmin && <div className="flex shrink-0 gap-1">
                       <button
                         aria-label={`Edit ${c.name}`}
                         onClick={() => {
@@ -124,7 +126,7 @@ function CategoriesPage() {
                       >
                         <Trash2 className="size-3.5" />
                       </button>
-                    </div>
+                    </div>}
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-1.5">
@@ -157,7 +159,7 @@ function CategoriesPage() {
         </div>
       )}
 
-      <CategoryForm open={open} onClose={() => setOpen(false)} category={editing} />
+      {isAdmin && <CategoryForm open={open} onClose={() => setOpen(false)} category={editing} />}
     </AppShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect } from "react";
 import { useHydrated } from "./theme";
+import { useAuth } from "./auth";
 import {
   itemHistory,
   listActivity,
@@ -27,6 +28,28 @@ export function useCategories(): Category[] | undefined {
 export function useItems(): Item[] | undefined {
   const hydrated = useHydrated();
   return useLiveQuery(() => (hydrated ? listItems() : undefined), [hydrated]);
+}
+
+/** Data visible to the signed-in user. Staff can only work in assigned categories. */
+export function useAccessibleCategories(): Category[] | undefined {
+  const categories = useCategories();
+  const { user } = useAuth();
+  if (!categories || !user) return categories;
+  return user.role === "admin" ? categories : categories.filter((category) => user.categoryIds.includes(category.id));
+}
+
+export function useAccessibleItems(): Item[] | undefined {
+  const items = useItems();
+  const { user } = useAuth();
+  if (!items || !user) return items;
+  return user.role === "admin" ? items : items.filter((item) => user.categoryIds.includes(item.categoryId));
+}
+
+export function useAccessibleActivity(limit = 60): Activity[] | undefined {
+  const activity = useActivity(limit);
+  const { user } = useAuth();
+  if (!activity || !user) return activity;
+  return user.role === "admin" ? activity : activity.filter((entry) => entry.categoryId && user.categoryIds.includes(entry.categoryId));
 }
 
 export function useActivity(limit = 60): Activity[] | undefined {

@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History } from "lucide-react";
+import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
+import { useAuth } from "@/lib/auth";
+import { LoginScreen } from "@/components/LoginScreen";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -54,6 +56,11 @@ export function AppShell({
   children: ReactNode;
 }) {
   useBootstrap();
+  const { user, isAdmin, logout } = useAuth();
+
+  if (user === undefined) return null;
+  if (!user) return <LoginScreen />;
+  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/settings"));
 
   return (
     <div className="relative min-h-screen w-full text-fog">
@@ -67,13 +74,13 @@ export function AppShell({
               V
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-strong">Veridian</p>
+              <p className="truncate text-sm font-semibold text-strong">StockLine</p>
               <p className="label-mono mt-0.5">Inventory OS</p>
             </div>
           </div>
 
           <nav className="flex flex-col gap-1">
-            {nav.map(({ to, label, icon: Icon }) => (
+            {visibleNav.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
@@ -90,29 +97,28 @@ export function AppShell({
           </nav>
 
           <div className="mt-auto rounded-2xl border border-hair bg-panel/60 p-3">
+            <p className="truncate px-1 text-sm font-medium text-strong">{user.name}</p>
+            <p className="label-mono mt-0.5 px-1">{isAdmin ? "Administrator" : "Staff account"}</p>
             <p className="label-mono px-1">Storage</p>
             <p className="mt-2 px-1 text-xs leading-relaxed text-fog/80">
               Everything is saved in this browser only. Export a backup regularly.
             </p>
-            <Link
-              to="/settings"
-              className="mt-3 block rounded-lg border border-amber/30 px-3 py-1.5 text-center text-xs font-medium text-amber"
-            >
-              Backup now
-            </Link>
+            {isAdmin && <Link to="/settings" className="mt-3 block rounded-lg border border-amber/30 px-3 py-1.5 text-center text-xs font-medium text-amber">Manage workspace</Link>}
+            <button onClick={logout} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-hair px-3 py-1.5 text-xs text-fog hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
           </div>
         </aside>
 
         <main className="ml-0 w-full min-w-0 flex-1 lg:ml-8">
-          <header className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+          <header className="mb-5 grid grid-cols-1 items-center gap-4 sm:flex sm:flex-wrap sm:justify-between sm:gap-3">
             <div className="min-w-0">
               <p className="label-mono">{eyebrow}</p>
               <h1 className="truncate font-display text-xl font-semibold text-strong sm:text-2xl">
                 {title}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-self-end gap-3 sm:gap-4">
               <ThemeToggle />
+              <span className="hidden text-right sm:block"><span className="block text-xs font-medium text-strong">{user.name}</span><span className="label-mono">{isAdmin ? "Admin" : "Staff"}</span></span>
               {actions}
             </div>
           </header>
@@ -129,8 +135,8 @@ export function AppShell({
 
       {/* mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5">
-          {nav.map(({ to, label, icon: Icon }) => (
+        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 5 ? "grid-cols-5" : "grid-cols-3"}`}>
+          {visibleNav.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
@@ -163,7 +169,7 @@ export function PrimaryButton({
     <button
       type={type}
       onClick={onClick}
-      className={`rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b px-4 py-2.5 text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-transform hover:-translate-y-0.5 active:translate-y-0 ${className}`}
+      className={`whitespace-nowrap rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b px-4 py-2.5 text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-transform hover:-translate-y-0.5 active:translate-y-0 ${className}`}
     >
       {children}
     </button>

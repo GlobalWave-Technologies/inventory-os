@@ -5,19 +5,19 @@ import { useMemo, useState } from "react";
 import { AppShell, PrimaryButton } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { ItemForm } from "@/components/ItemForm";
-import { useActivity, useCategories, useItems, isLow, stockValue, accentVar } from "@/lib/ledger";
+import { useAccessibleActivity, useAccessibleCategories, useAccessibleItems, isLow, stockValue, accentVar } from "@/lib/ledger";
 import { compactMoney, money, timeAgo } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Veridian Inventory — stock dashboard in Ghana cedis" },
+      { title: "StockLine Inventory — stock dashboard in Ghana cedis" },
       {
         name: "description",
         content:
           "Track categories, custom fields, stock levels and value in GH₵ — all stored privately in your own browser.",
       },
-      { property: "og:title", content: "Veridian Inventory — stock dashboard in Ghana cedis" },
+      { property: "og:title", content: "StockLine Inventory — stock dashboard in Ghana cedis" },
       {
         property: "og:description",
         content: "Custom categories, custom fields and live stock value in GH₵.",
@@ -65,9 +65,9 @@ function Stat({
 }
 
 function Dashboard() {
-  const items = useItems();
-  const categories = useCategories();
-  const activity = useActivity(8);
+  const items = useAccessibleItems();
+  const categories = useAccessibleCategories();
+  const activity = useAccessibleActivity(8);
   const [adding, setAdding] = useState(false);
 
   const stats = useMemo(() => {

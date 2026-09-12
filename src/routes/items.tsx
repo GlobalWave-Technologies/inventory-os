@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { AppShell, GhostButton, PrimaryButton } from "@/components/AppShell";
 import { EmptyState, Field, LoadingPanels, Modal } from "@/components/Modal";
 import { ItemForm } from "@/components/ItemForm";
-import { accentVar, isLow, statusLabel, useCategories, useItemHistory, useItems } from "@/lib/ledger";
+import { accentVar, isLow, statusLabel, useAccessibleCategories, useItemHistory, useAccessibleItems } from "@/lib/ledger";
 import { adjustStock, deleteItem, type Item } from "@/lib/db";
 import { money, shortDate, timeAgo } from "@/lib/format";
 
@@ -18,13 +18,13 @@ export const Route = createFileRoute("/items")({
   }),
   head: () => ({
     meta: [
-      { title: "Items & stock levels in GH₵ — Veridian Inventory" },
+      { title: "Items & stock levels in GH₵ — StockLine Inventory" },
       {
         name: "description",
         content:
           "Search and filter every item by category, name or custom field value, with quantities and values shown in Ghana cedis.",
       },
-      { property: "og:title", content: "Items & stock levels in GH₵ — Veridian Inventory" },
+      { property: "og:title", content: "Items & stock levels in GH₵ — StockLine Inventory" },
       {
         property: "og:description",
         content: "Search, filter and adjust stock, with values in Ghana cedis.",
@@ -37,8 +37,8 @@ export const Route = createFileRoute("/items")({
 function ItemsPage() {
   const { category } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const items = useItems();
-  const categories = useCategories();
+  const items = useAccessibleItems();
+  const categories = useAccessibleCategories();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | Item["status"]>("all");
