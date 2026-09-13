@@ -96,6 +96,17 @@ This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://inventary-management-system.lovable.app
 
+## Demo access
+
+Use either role on the login screen:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `admin@veridian.local` | `admin123` |
+| Staff | `staff@veridian.local` | `staff123` |
+
+Demo accounts and inventory data are stored in the current browser. Staff access is limited to categories assigned by an administrator.
+
 ## Build with Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/81f8bac2-532a-4748-a1b3-9f4c352f26ec).

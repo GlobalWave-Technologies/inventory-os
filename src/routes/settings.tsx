@@ -58,8 +58,9 @@ function SettingsPage() {
       "Name",
       "Category",
       "Quantity",
-      "Unit value (GHS)",
-      "Total value (GHS)",
+      "Original price (GHS)",
+      "Sold price (GHS)",
+      "Profit per unit (GHS)",
       "Location",
       "Status",
       "Date added",
@@ -70,8 +71,9 @@ function SettingsPage() {
       i.name,
       (categories ?? []).find((c) => c.id === i.categoryId)?.name ?? "",
       i.quantity,
-      i.unitValue,
-      i.quantity * i.unitValue,
+      i.originalPrice,
+      i.sellingPrice,
+      i.sellingPrice - i.originalPrice,
       i.location,
       i.status,
       i.dateAdded.slice(0, 10),
@@ -96,7 +98,7 @@ function SettingsPage() {
     }
   }
 
-  const total = (items ?? []).reduce((s, i) => s + i.quantity * i.unitValue, 0);
+  const total = (items ?? []).reduce((s, i) => s + i.quantity * i.originalPrice, 0);
 
   if (!isAdmin) {
     return (

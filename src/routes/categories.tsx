@@ -84,7 +84,7 @@ function CategoriesPage() {
           <AnimatePresence mode="popLayout">
             {categories.map((c, i) => {
               const mine = items.filter((it) => it.categoryId === c.id);
-              const value = mine.reduce((s, it) => s + it.quantity * it.unitValue, 0);
+              const value = mine.reduce((s, it) => s + it.quantity * it.originalPrice, 0);
               return (
                 <motion.article
                   key={c.id}

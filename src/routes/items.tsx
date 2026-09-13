@@ -199,8 +199,8 @@ function ItemsPage() {
                       <p className="label-mono mt-0.5">in stock</p>
                     </div>
                     <div className="text-right">
-                      <p className="num text-sm text-strong">{money(item.quantity * item.unitValue)}</p>
-                      <p className="label-mono mt-0.5">{money(item.unitValue)} each</p>
+                      <p className="num text-sm text-strong">{money(item.quantity * item.originalPrice)}</p>
+                      <p className="label-mono mt-0.5">{money(item.originalPrice)} cost each</p>
                     </div>
                   </div>
                 </motion.button>
@@ -295,8 +295,8 @@ function ItemDetail({
         <div className="flex flex-col gap-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Quantity" value={String(item.quantity)} />
-            <Stat label="Unit value" value={money(item.unitValue)} />
-            <Stat label="Total value" value={money(item.quantity * item.unitValue)} />
+            <Stat label="Original price" value={money(item.originalPrice)} />
+            <Stat label="Sold price" value={money(item.sellingPrice)} />
             <Stat label="Status" value={statusLabel[item.status]} />
           </div>
 

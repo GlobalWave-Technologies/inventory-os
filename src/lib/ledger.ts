@@ -80,7 +80,7 @@ export const accentVar = (accent: Category["accent"]) =>
 export const isLow = (item: Item) => item.quantity <= item.lowStockThreshold;
 
 export const stockValue = (items: Item[]) =>
-  items.reduce((sum, i) => sum + i.quantity * i.unitValue, 0);
+  items.reduce((sum, i) => sum + i.quantity * i.originalPrice, 0);
 
 export const statusLabel: Record<Item["status"], string> = {
   "in-stock": "In stock",

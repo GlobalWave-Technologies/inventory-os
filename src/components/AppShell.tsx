@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { ArrowLeft, Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut } from "lucide-react";
+import { ArrowLeft, Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
@@ -13,6 +13,7 @@ const nav = [
   { to: "/items", label: "Items", icon: Package },
   { to: "/categories", label: "Categories", icon: Boxes },
   { to: "/activity", label: "Movement log", icon: History },
+  { to: "/profit-loss", label: "Profit & loss", icon: ChartNoAxesCombined },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -63,7 +64,7 @@ export function AppShell({
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
   if (!isAdmin && !portalId) return <PortalPicker />;
-  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/settings"));
+  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/settings" && entry.to !== "/profit-loss"));
 
   return (
     <div className="relative min-h-screen w-full text-fog">

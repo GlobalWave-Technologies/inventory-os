@@ -43,7 +43,8 @@ export interface Item {
   quantity: number;
   lowStockThreshold: number;
   location: string;
-  unitValue: number;
+  originalPrice: number;
+  sellingPrice: number;
   status: ItemStatus;
   dateAdded: string;
   notes?: string;
@@ -102,6 +103,18 @@ class LedgerDB extends Dexie {
       activity: "id, at, kind, itemId",
       users: "id, &email, role, createdAt",
     });
+    this.version(4).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+    }).upgrade((tx) =>
+      tx.table("items").toCollection().modify((item: Item & { unitValue?: number }) => {
+        item.originalPrice ??= item.unitValue ?? 0;
+        item.sellingPrice ??= item.unitValue ?? 0;
+        delete item.unitValue;
+      }),
+    );
   }
 }
 
@@ -138,7 +151,7 @@ async function assertPortalAccess(categoryId: string) {
 }
 
 const categorySchema = z.object({ name: z.string().trim().min(1).max(80), accent: z.enum(["a", "b", "c", "amber", "rose"]), attributes: z.array(z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(80), type: z.enum(["text", "number", "date", "select"]), options: z.array(z.string()).optional(), required: z.boolean().optional() })).max(30) });
-const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), unitValue: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
+const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), originalPrice: z.number().finite().min(0), sellingPrice: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
 
 async function passwordDigest(password: string) {
   const bytes = new TextEncoder().encode(password);
@@ -484,7 +497,8 @@ export async function seedIfEmpty() {
       quantity: 4,
       lowStockThreshold: 20,
       location: "Warehouse B, Tema",
-      unitValue: 2150,
+      originalPrice: 2150,
+      sellingPrice: 2750,
       status: "in-stock",
       dateAdded: new Date(Date.now() - 86400000 * 20).toISOString(),
       custom: { Material: "Steel", "Width (mm)": 900, "Height (mm)": 2100 },
@@ -495,7 +509,8 @@ export async function seedIfEmpty() {
       quantity: 18,
       lowStockThreshold: 8,
       location: "Warehouse A, Accra",
-      unitValue: 340,
+      originalPrice: 340,
+      sellingPrice: 475,
       status: "in-stock",
       dateAdded: new Date(Date.now() - 86400000 * 12).toISOString(),
       custom: { Material: "Oak", "Width (mm)": 750, "Height (mm)": 2000 },
@@ -506,7 +521,8 @@ export async function seedIfEmpty() {
       quantity: 2,
       lowStockThreshold: 15,
       location: "Office 2, Kumasi",
-      unitValue: 18990,
+      originalPrice: 18990,
+      sellingPrice: 22400,
       status: "in-stock",
       dateAdded: new Date(Date.now() - 86400000 * 6).toISOString(),
       custom: { Brand: "Lenovo", "RAM (GB)": 32, "Warranty ends": "2027-04-01" },
@@ -517,7 +533,8 @@ export async function seedIfEmpty() {
       quantity: 0,
       lowStockThreshold: 3,
       location: "Office 1, Accra",
-      unitValue: 43000,
+      originalPrice: 43000,
+      sellingPrice: 49500,
       status: "reserved",
       dateAdded: new Date(Date.now() - 86400000 * 3).toISOString(),
       custom: { Brand: "Dell", "RAM (GB)": 64, "Warranty ends": "2028-01-15" },
@@ -528,7 +545,8 @@ export async function seedIfEmpty() {
       quantity: 6,
       lowStockThreshold: 10,
       location: "Pasture 3, Techiman",
-      unitValue: 1250,
+      originalPrice: 1250,
+      sellingPrice: 1650,
       status: "in-stock",
       dateAdded: new Date(Date.now() - 86400000 * 40).toISOString(),
       custom: { Breed: "Alpine", "Age (months)": 18, "Weight (kg)": 52 },
@@ -568,12 +586,18 @@ export async function importSnapshot(snap: Snapshot, mode: "replace" | "merge") 
     throw new Error("That file doesn't look like a Northern Ledger backup.");
   }
   const d = db();
+  const items = snap.items.map((item) => {
+    const legacy = item as Item & { unitValue?: number };
+    const originalPrice = legacy.originalPrice ?? legacy.unitValue ?? 0;
+    const sellingPrice = legacy.sellingPrice ?? legacy.unitValue ?? originalPrice;
+    return { ...item, originalPrice, sellingPrice };
+  });
   await d.transaction("rw", d.categories, d.items, d.activity, d.users, async () => {
     if (mode === "replace") {
       await Promise.all([d.categories.clear(), d.items.clear(), d.activity.clear(), d.users.clear()]);
     }
     await d.categories.bulkPut(snap.categories);
-    await d.items.bulkPut(snap.items);
+    await d.items.bulkPut(items);
     if (Array.isArray(snap.activity)) await d.activity.bulkPut(snap.activity);
     if (Array.isArray(snap.users)) await d.users.bulkPut(snap.users);
   });

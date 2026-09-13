@@ -12,7 +12,8 @@ type Draft = {
   quantity: string;
   lowStockThreshold: string;
   location: string;
-  unitValue: string;
+  originalPrice: string;
+  sellingPrice: string;
   status: ItemStatus;
   dateAdded: string;
   notes: string;
@@ -25,7 +26,8 @@ const emptyDraft = (categoryId: string): Draft => ({
   quantity: "0",
   lowStockThreshold: "5",
   location: "",
-  unitValue: "0",
+  originalPrice: "0",
+  sellingPrice: "0",
   status: "in-stock",
   dateAdded: new Date().toISOString().slice(0, 10),
   notes: "",
@@ -56,7 +58,8 @@ export function ItemForm({
         quantity: String(item.quantity),
         lowStockThreshold: String(item.lowStockThreshold),
         location: item.location,
-        unitValue: String(item.unitValue),
+        originalPrice: String(item.originalPrice),
+        sellingPrice: String(item.sellingPrice),
         status: item.status,
         dateAdded: item.dateAdded.slice(0, 10),
         notes: item.notes ?? "",
@@ -94,7 +97,8 @@ export function ItemForm({
       quantity: Math.max(0, Number(draft.quantity) || 0),
       lowStockThreshold: Math.max(0, Number(draft.lowStockThreshold) || 0),
       location: draft.location.trim(),
-      unitValue: Math.max(0, Number(draft.unitValue) || 0),
+      originalPrice: Math.max(0, Number(draft.originalPrice) || 0),
+      sellingPrice: Math.max(0, Number(draft.sellingPrice) || 0),
       status: draft.status,
       dateAdded: new Date(draft.dateAdded).toISOString(),
       notes: draft.notes.trim(),
@@ -183,14 +187,25 @@ export function ItemForm({
           />
         </Field>
 
-        <Field label="Unit value (GH₵)">
+        <Field label="Original price (GH₵)">
           <input
             type="number"
             min={0}
             step="0.01"
             className="field num"
-            value={draft.unitValue}
-            onChange={(e) => set({ unitValue: e.target.value })}
+            value={draft.originalPrice}
+            onChange={(e) => set({ originalPrice: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Sold price (GH₵)">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            className="field num"
+            value={draft.sellingPrice}
+            onChange={(e) => set({ sellingPrice: e.target.value })}
           />
         </Field>
 
