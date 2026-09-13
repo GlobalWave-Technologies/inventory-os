@@ -104,10 +104,8 @@ function SettingsPage() {
 
   if (!isAdmin) {
     return (
-      <AppShell eyebrow="Access" title="Admin only">
-        <section className="glass rounded-2xl p-5 text-sm text-fog/80">
-          This area is reserved for the administrator. Your assigned inventory categories are available from Items.
-        </section>
+      <AppShell eyebrow="Account" title="Account settings">
+        <PasswordManager userId={user?.id ?? ""} />
       </AppShell>
     );
   }
@@ -253,7 +251,7 @@ function StaffManager() {
     setName(editing?.name ?? "");
     setEmail(editing?.email ?? "");
     setPassword("");
-    setCategoryIds(editing?.categoryIds ?? []);
+    setCategoryIds(editing?.categoryIds?.slice(0, 1) ?? []);
   }, [open, editing]);
 
   async function save() {
@@ -285,17 +283,17 @@ function StaffManager() {
         {users.map((user) => (
           <div key={user.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-panel/40 px-3 py-3">
             <span className="grid size-8 place-items-center rounded-lg bg-aurora-a/15 text-aurora-a"><Users className="size-4" /></span>
-            <div className="min-w-0 flex-1"><p className="text-sm font-medium text-strong">{user.name} <span className="label-mono ml-1">{user.role}</span></p><p className="truncate text-xs text-fog/75">{user.email} · {user.role === "admin" ? "All categories" : `${user.categoryIds.length} assigned category${user.categoryIds.length === 1 ? "" : "ies"}`}</p></div>
+            <div className="min-w-0 flex-1"><p className="text-sm font-medium text-strong">{user.name} <span className="label-mono ml-1">{user.role}</span></p><p className="truncate text-xs text-fog/75">{user.email} · {user.role === "admin" ? "All categories" : `Portal: ${categories.find((category) => category.id === user.categoryIds[0])?.name ?? "Not assigned"}`}</p></div>
             {user.role === "staff" && <><button onClick={() => { setEditing(user); setOpen(true); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong">Edit access</button><button onClick={() => { if (confirm(`Remove ${user.name}'s staff account?`)) void deleteStaff(user.id).then(() => toast.success("Staff account removed")); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-rose">Remove</button></>}
           </div>
         ))}
       </div>
-      <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit staff access" : "Add staff member"} subtitle="Assign the inventory categories this person can access">
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit staff access" : "Add staff member"} subtitle="Assign one portal category to this staff member">
         <div className="flex flex-col gap-4">
           <Field label="Name"><input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Staff member name" /></Field>
           <Field label="Email"><input type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></Field>
           <Field label={editing ? "New password (leave blank to keep current)" : "Temporary password"}><input type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-          <div><p className="label-mono mb-2">Allowed categories</p>{categories.length === 0 ? <p className="text-sm text-fog/70">Create categories first, then assign access here.</p> : <div className="grid gap-2 sm:grid-cols-2">{categories.map((category) => <label key={category.id} className="flex cursor-pointer items-center gap-2 rounded-xl border border-hair px-3 py-2 text-sm text-strong"><input type="checkbox" checked={categoryIds.includes(category.id)} onChange={() => setCategoryIds((ids) => ids.includes(category.id) ? ids.filter((id) => id !== category.id) : [...ids, category.id])} />{category.name}</label>)}</div>}</div>
+          <Field label="Assigned portal category">{categories.length === 0 ? <p className="text-sm text-fog/70">Create a category first, then assign access here.</p> : <select className="field" value={categoryIds[0] ?? ""} onChange={(event) => setCategoryIds(event.target.value ? [event.target.value] : [])}><option value="">No category assigned</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>}</Field>
           <div className="flex justify-end gap-2"><GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton><PrimaryButton onClick={() => void save()}>{editing ? "Save access" : "Create staff account"}</PrimaryButton></div>
         </div>
       </Modal>

@@ -64,7 +64,7 @@ export function AppShell({
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
   if (!isAdmin && !portalId) return <PortalPicker />;
-  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/settings" && entry.to !== "/profit-loss"));
+  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/profit-loss"));
 
   return (
     <div className="relative min-h-screen w-full text-fog">
