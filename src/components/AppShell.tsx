@@ -59,7 +59,7 @@ export function AppShell({
 }) {
   useBootstrap();
   const router = useRouter();
-  const { user, isAdmin, logout, portalId, clearPortal } = useAuth();
+  const { user, isAdmin, logout, portalId } = useAuth();
 
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
@@ -153,7 +153,7 @@ export function AppShell({
 
       {/* mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 backdrop-blur-xl lg:hidden">
-        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 5 ? "grid-cols-5" : "grid-cols-3"}`}>
+        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 6 ? "grid-cols-6" : visibleNav.length === 5 ? "grid-cols-5" : visibleNav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
           {visibleNav.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
