@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardList, LockKeyhole, Send, TrendingUp } from "lucide-react";
+import { ClipboardList, LoaderCircle, LockKeyhole, Send, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ function ReportsPage() {
   const [reportDate, setReportDate] = useState(today());
   const [categoryId, setCategoryId] = useState("");
   const [draft, setDraft] = useState<Record<string, DraftLine>>({});
+  const [submitting, setSubmitting] = useState(false);
   const selectedCategoryId = isAdmin ? categoryId : categories?.[0]?.id ?? "";
   const categoryItems = (items ?? []).filter((item) => item.categoryId === selectedCategoryId);
   const ownReports = reports.filter((report) => report.submittedBy === user?.id);
@@ -48,16 +49,25 @@ function ReportsPage() {
   }
 
   async function submit() {
-    if (!user || !selectedCategoryId) return toast.error("Choose a category first.");
+    if (!user || !selectedCategoryId) {
+      toast.error("Choose a category first.");
+      return;
+    }
     const lines = categoryItems.map((item) => lineFor(item.id, { itemId: item.id, itemName: item.name, quantity: 0, originalPrice: item.originalPrice, sellingPrice: item.sellingPrice })).filter((line) => line.quantity > 0);
-    if (lines.length === 0) return toast.error("Enter at least one sold quantity.");
+    if (lines.length === 0) {
+      toast.error("Enter at least one sold quantity.");
+      return;
+    }
     if (!confirm("Submit this daily sales report? It cannot be edited or deleted after submission.")) return;
+    setSubmitting(true);
     try {
       await submitDailySalesReport({ reportDate, categoryId: selectedCategoryId, submittedBy: user.id, lines });
       setDraft({});
       toast.success("Daily sales report submitted and locked");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "The report could not be submitted.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -67,20 +77,20 @@ function ReportsPage() {
     <AppShell eyebrow="Reports" title="Daily sales">
       <div className="flex flex-col gap-5">
         {isAdmin && <AdminSummary totals={totals} reports={reports.length} />}
-        {!isAdmin && <ReportForm categories={categories} categoryItems={categoryItems} categoryId={selectedCategoryId} categoryValue={categoryId} onCategoryChange={selectCategory} reportDate={reportDate} onDateChange={setReportDate} draft={draft} setDraft={setDraft} submitted={submitted} onSubmit={() => void submit()} />}
+        {!isAdmin && <ReportForm categories={categories} categoryItems={categoryItems} categoryId={selectedCategoryId} categoryValue={categoryId} onCategoryChange={selectCategory} reportDate={reportDate} onDateChange={setReportDate} draft={draft} setDraft={setDraft} submitted={submitted} submitting={submitting} onSubmit={() => void submit()} />}
         {isAdmin ? <AdminReports reports={reports} categories={categories} users={users} /> : <StaffHistory reports={ownReports} categories={categories} />}
       </div>
     </AppShell>
   );
 }
 
-function ReportForm({ categories, categoryItems, categoryId, categoryValue, onCategoryChange, reportDate, onDateChange, draft, setDraft, submitted, onSubmit }: { categories: { id: string; name: string }[]; categoryItems: { id: string; name: string; originalPrice: number; sellingPrice: number }[]; categoryId: string; categoryValue: string; onCategoryChange: (value: string) => void; reportDate: string; onDateChange: (value: string) => void; draft: Record<string, DraftLine>; setDraft: (value: Record<string, DraftLine>) => void; submitted: boolean; onSubmit: () => void }) {
+function ReportForm({ categories, categoryItems, categoryId, categoryValue, onCategoryChange, reportDate, onDateChange, draft, setDraft, submitted, submitting, onSubmit }: { categories: { id: string; name: string }[]; categoryItems: { id: string; name: string; originalPrice: number; sellingPrice: number }[]; categoryId: string; categoryValue: string; onCategoryChange: (value: string) => void; reportDate: string; onDateChange: (value: string) => void; draft: Record<string, DraftLine>; setDraft: (value: Record<string, DraftLine>) => void; submitted: boolean; submitting: boolean; onSubmit: () => void }) {
   return (
     <section className="glass rounded-2xl p-4 sm:p-5">
       <div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-aurora-a/15 text-aurora-a"><ClipboardList className="size-4" /></span><div><p className="label-mono">Staff submission</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Daily sales report</h2><p className="mt-1 text-sm text-fog/75">Enter the prices and quantities sold for one day. Submitted reports are permanent.</p></div></div>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Report date"><input type="date" className="field" value={reportDate} max={today()} onChange={(event) => onDateChange(event.target.value)} disabled={submitted} /></Field><Field label="Portal category"><select className="field" value={categoryValue || categoryId} onChange={(event) => onCategoryChange(event.target.value)} disabled={submitted}><option value="">Choose category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></Field></div>
-      {submitted ? <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"><LockKeyhole className="size-4 shrink-0" /> A report for this category and date has already been submitted and locked.</div> : categoryItems.length === 0 ? <p className="mt-4 rounded-xl border border-dashed border-hair p-5 text-center text-sm text-fog/70">No items are available in this category.</p> : <div className="mt-4 overflow-x-auto rounded-xl border border-hair"><table className="w-full min-w-[660px] text-left text-sm"><thead className="border-b border-hair text-xs text-fog/60"><tr><th className="px-3 py-3">Item</th><th className="px-3 py-3">Original price</th><th className="px-3 py-3">Sold price</th><th className="px-3 py-3">Sold quantity</th></tr></thead><tbody className="divide-y divide-hair/70">{categoryItems.map((item) => { const line = draft[item.id] ?? { itemId: item.id, itemName: item.name, quantity: 0, originalPrice: item.originalPrice, sellingPrice: item.sellingPrice }; return <tr key={item.id}><td className="px-3 py-3 text-strong">{item.name}</td><td className="px-3 py-3"><input type="number" min={0} step="0.01" className="field min-w-28" value={line.originalPrice} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, originalPrice: Number(event.target.value) || 0 } })} /></td><td className="px-3 py-3"><input type="number" min={0} step="0.01" className="field min-w-28" value={line.sellingPrice} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, sellingPrice: Number(event.target.value) || 0 } })} /></td><td className="px-3 py-3"><input type="number" min={0} step="1" className="field min-w-24" value={line.quantity || ""} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, quantity: Number(event.target.value) || 0 } })} /></td></tr>; })}</tbody></table></div>}
-      {!submitted && categoryItems.length > 0 && <PrimaryButton className="mt-4" onClick={onSubmit}><span className="flex items-center gap-1.5"><Send className="size-4" /> Review and submit report</span></PrimaryButton>}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Report date"><input type="date" className="field" value={reportDate} max={today()} onChange={(event) => onDateChange(event.target.value)} disabled={submitted || submitting} /></Field><Field label="Portal category"><select className="field" value={categoryValue || categoryId} onChange={(event) => onCategoryChange(event.target.value)} disabled={submitted || submitting}><option value="">Choose category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></Field></div>
+      {submitted ? <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"><LockKeyhole className="size-4 shrink-0" /> A report for this category and date has already been submitted and locked.</div> : categoryItems.length === 0 ? <p className="mt-4 rounded-xl border border-dashed border-hair p-5 text-center text-sm text-fog/70">No items are available in this category.</p> : <div className="mt-4 overflow-x-auto rounded-xl border border-hair"><table className="w-full min-w-[660px] text-left text-sm"><thead className="border-b border-hair text-xs text-fog/60"><tr><th className="px-3 py-3">Item</th><th className="px-3 py-3">Original price</th><th className="px-3 py-3">Sold price</th><th className="px-3 py-3">Sold quantity</th></tr></thead><tbody className="divide-y divide-hair/70">{categoryItems.map((item) => { const line = draft[item.id] ?? { itemId: item.id, itemName: item.name, quantity: 0, originalPrice: item.originalPrice, sellingPrice: item.sellingPrice }; return <tr key={item.id}><td className="px-3 py-3 text-strong">{item.name}</td><td className="px-3 py-3"><input type="number" min={0} step="0.01" className="field min-w-28" value={line.originalPrice} disabled={submitting} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, originalPrice: Number(event.target.value) || 0 } })} /></td><td className="px-3 py-3"><input type="number" min={0} step="0.01" className="field min-w-28" value={line.sellingPrice} disabled={submitting} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, sellingPrice: Number(event.target.value) || 0 } })} /></td><td className="px-3 py-3"><input type="number" min={0} step="1" className="field min-w-24" value={line.quantity || ""} disabled={submitting} onChange={(event) => setDraft({ ...draft, [item.id]: { ...line, quantity: Number(event.target.value) || 0 } })} /></td></tr>; })}</tbody></table></div>}
+      {!submitted && categoryItems.length > 0 && <PrimaryButton className="mt-4" onClick={onSubmit} disabled={submitting}><span className="flex items-center gap-1.5">{submitting ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}{submitting ? "Submitting report..." : "Review and submit report"}</span></PrimaryButton>}
     </section>
   );
 }
