@@ -165,6 +165,18 @@ class LedgerDB extends Dexie {
       users: "id, &email, role, createdAt",
       dailySalesReports: "id, reportDate, categoryId, submittedBy, submittedAt",
     });
+    this.version(8).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+      dailySalesReports: "id, reportDate, categoryId, submittedBy, submittedAt",
+    }).upgrade(async (tx) => {
+      const demo = await tx.table("users").where("email").equals("staff@veridian.local").first();
+      if (!demo) return;
+      await tx.table("dailySalesReports").toCollection().filter((report: DailySalesReport) => report.submittedBy === demo.id).delete();
+      await tx.table("users").delete(demo.id);
+    });
   }
 }
 
@@ -465,19 +477,6 @@ export async function logPortalAccess(userId: string, categoryId: string, allowe
   await db().activity.add({ id: uid(), at: new Date().toISOString(), kind: "item-updated", message: allowed ? "Portal access granted" : "Unauthorized portal access blocked", userId, categoryId, allowed, reason: "Portal selection" });
 }
 
-async function ensureDemoStaff() {
-  const existing = await db().users.where("email").equals("staff@veridian.local").first();
-  if (existing) return existing;
-  const category = await db().categories.filter((entry) => !entry.deletedAt).first();
-  if (!category) return null;
-  return createStaff({
-    name: "Demo Staff",
-    email: "staff@veridian.local",
-    password: "staff123",
-    categoryIds: [category.id],
-  });
-}
-
 export async function updateItem(id: string, patch: Partial<Item>) {
   const before = await db().items.get(id);
   if (before) await assertPortalAccess(before.categoryId);
@@ -586,7 +585,6 @@ export async function seedIfEmpty() {
   await ensureDefaultAdmin();
   const count = await db().categories.count();
   if (count > 0) {
-    await ensureDemoStaff();
     return;
   }
 
@@ -682,7 +680,6 @@ export async function seedIfEmpty() {
   ];
 
   for (const s of seeds) await createItem(s);
-  await ensureDemoStaff();
 }
 
 /* ---------------- backup ---------------- */
