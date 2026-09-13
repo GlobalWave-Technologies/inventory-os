@@ -115,7 +115,7 @@ function SettingsPage() {
       <div className="flex flex-col gap-4">
         <PasswordManager userId={user?.id ?? ""} />
         <StaffManager />
-        <section className="glass rounded-2xl border-amber/30 p-4 sm:p-5">
+        <section className="glass rounded-2xl border-amber/30 bg-amber/[0.04] p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber/15 text-amber">
               <AlertTriangle className="size-4" />
@@ -132,8 +132,9 @@ function SettingsPage() {
           </div>
         </section>
 
-        <section className="glass rounded-2xl p-4 sm:p-5">
-          <p className="label-mono">Currently stored</p>
+        <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">
+          <p className="label-mono text-aurora-a">Workspace snapshot</p>
+          <h2 className="mt-1 font-display text-lg font-semibold text-strong">Currently stored</h2>
           <p className="num mt-2 text-lg text-strong">
             {(categories ?? []).length} categories · {(items ?? []).length} items · {money(total)}
           </p>
@@ -168,8 +169,8 @@ function SettingsPage() {
           </div>
         </section>
 
-        <section className="glass rounded-2xl p-4 sm:p-5">
-          <p className="label-mono">Danger zone</p>
+        <section className="glass rounded-2xl border-rose/30 p-4 sm:p-5">
+          <p className="label-mono text-rose">Danger zone</p>
           <p className="mt-2 text-sm text-fog/80">
             Erase every category, item and log entry from this browser.
           </p>

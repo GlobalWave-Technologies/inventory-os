@@ -135,9 +135,9 @@ function Dashboard() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <section className="glass rounded-2xl p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-base font-semibold text-strong">Low stock</h2>
+            <section className="glass overflow-hidden rounded-2xl border-aurora-a/20 p-4 sm:p-5">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div><p className="label-mono text-amber">Attention</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Low stock</h2></div>
                 <Link to="/items" className="text-xs text-aurora-a">
                   View all items
                 </Link>
@@ -176,9 +176,9 @@ function Dashboard() {
               )}
             </section>
 
-            <section className="glass rounded-2xl p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-base font-semibold text-strong">Recent activity</h2>
+            <section className="glass overflow-hidden rounded-2xl border-aurora-b/20 p-4 sm:p-5">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div><p className="label-mono text-aurora-b">Live feed</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Recent activity</h2></div>
                 <Link to="/activity" className="text-xs text-aurora-a">
                   Full log
                 </Link>

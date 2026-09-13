@@ -63,11 +63,11 @@ function ProfitLossPage() {
   return (
     <AppShell eyebrow="Finance" title="Profit & loss">
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div><div className="mb-3"><p className="label-mono text-aurora-a">Admin overview</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Financial performance</h2></div><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Summary label="Original cost" value={report.original} icon={<Coins className="size-4" />} />
           <Summary label="Total revenue" value={report.revenue} icon={<ChartNoAxesCombined className="size-4" />} />
           <Summary label="Projected profit" value={profit} icon={profit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={profit >= 0 ? "text-aurora-a" : "text-rose"} />
-        </div>
+        </div></div>
 
         {report.groups.length > 0 && <AnalysisChart data={report.chart} />}
 
@@ -127,7 +127,7 @@ function AnalysisChart({ data }: { data: Array<{ category: string; revenue: numb
   const lowest = data.reduce((worst, current) => current.revenue < worst.revenue ? current : worst, data[0]);
 
   return (
-    <section className="glass rounded-2xl p-4 sm:p-5">
+    <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="label-mono">Analysis</p>
