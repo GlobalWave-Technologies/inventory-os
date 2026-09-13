@@ -382,11 +382,16 @@ function AdjustModal({ item, onClose }: { item: Item | null; onClose: () => void
     if (!item) return;
     const amount = Math.abs(Number(delta) || 0) * sign;
     if (amount === 0) return toast.error("Enter how many units changed.");
-    await adjustStock(item.id, amount, reason.trim());
-    toast.success(`${item.name}: ${amount > 0 ? "+" : ""}${amount} units`);
-    setReason("");
-    setDelta(1);
-    onClose();
+    if (!reason.trim()) return toast.error("Add a reason for this stock change.");
+    try {
+      await adjustStock(item.id, amount, reason.trim());
+      toast.success(`${item.name}: ${amount > 0 ? "+" : ""}${amount} units`);
+      setReason("");
+      setDelta(1);
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't adjust stock.");
+    }
   }
 
   return (
@@ -401,7 +406,7 @@ function AdjustModal({ item, onClose }: { item: Item | null; onClose: () => void
             onChange={(e) => setDelta(Number(e.target.value))}
           />
         </Field>
-        <Field label="Reason">
+        <Field label="Reason (required)">
           <input
             className="field"
             value={reason}

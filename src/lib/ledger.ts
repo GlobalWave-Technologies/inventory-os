@@ -33,23 +33,24 @@ export function useItems(): Item[] | undefined {
 /** Data visible to the signed-in user. Staff can only work in assigned categories. */
 export function useAccessibleCategories(): Category[] | undefined {
   const categories = useCategories();
-  const { user } = useAuth();
+  const { user, portalId } = useAuth();
   if (!categories || !user) return categories;
-  return user.role === "admin" ? categories : categories.filter((category) => user.categoryIds.includes(category.id));
+  if (user.role === "admin") return categories;
+  return categories.filter((category) => user.categoryIds.includes(category.id) && (!portalId || category.id === portalId));
 }
 
 export function useAccessibleItems(): Item[] | undefined {
   const items = useItems();
-  const { user } = useAuth();
+  const { user, portalId } = useAuth();
   if (!items || !user) return items;
-  return user.role === "admin" ? items : items.filter((item) => user.categoryIds.includes(item.categoryId));
+  return user.role === "admin" ? items : items.filter((item) => user.categoryIds.includes(item.categoryId) && item.categoryId === portalId);
 }
 
 export function useAccessibleActivity(limit = 60): Activity[] | undefined {
   const activity = useActivity(limit);
-  const { user } = useAuth();
+  const { user, portalId } = useAuth();
   if (!activity || !user) return activity;
-  return user.role === "admin" ? activity : activity.filter((entry) => entry.categoryId && user.categoryIds.includes(entry.categoryId));
+  return user.role === "admin" ? activity : activity.filter((entry) => entry.categoryId === portalId && user.categoryIds.includes(entry.categoryId ?? ""));
 }
 
 export function useActivity(limit = 60): Activity[] | undefined {

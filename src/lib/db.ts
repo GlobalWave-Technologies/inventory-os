@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import { z } from "zod";
 
 export type AttributeType = "text" | "number" | "date" | "select";
 
@@ -16,6 +17,7 @@ export interface Category {
   accent: "a" | "b" | "c" | "amber" | "rose";
   attributes: AttributeDef[];
   createdAt: string;
+  deletedAt?: string;
 }
 
 export type UserRole = "admin" | "staff";
@@ -24,8 +26,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  /** Local-only demo credential. Use a server-side auth provider before production deployment. */
-  password: string;
+  /** Legacy plaintext password, migrated to passwordHash on the next successful login. */
+  password?: string;
+  passwordHash?: string;
   role: UserRole;
   categoryIds: string[];
   createdAt: string;
@@ -46,6 +49,7 @@ export interface Item {
   notes?: string;
   custom: Record<string, string | number>;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export type ActivityKind =
@@ -66,6 +70,9 @@ export interface Activity {
   categoryId?: string;
   delta?: number;
   reason?: string;
+  reversedAt?: string;
+  userId?: string;
+  allowed?: boolean;
   at: string;
 }
 
@@ -85,6 +92,13 @@ class LedgerDB extends Dexie {
     this.version(2).stores({
       categories: "id, name, createdAt",
       items: "id, categoryId, name, status, dateAdded, updatedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+    });
+    // v3 adds soft-delete indexes. Keep prior fields optional so existing browser databases migrate safely.
+    this.version(3).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
       activity: "id, at, kind, itemId",
       users: "id, &email, role, createdAt",
     });
@@ -111,6 +125,27 @@ async function log(entry: Omit<Activity, "id" | "at">) {
   await db().activity.add({ ...entry, id: uid(), at: new Date().toISOString() });
 }
 
+async function assertPortalAccess(categoryId: string) {
+  const raw = localStorage.getItem("veridian-session");
+  if (!raw) return; // Initial local seed runs before a user session exists.
+  const session = JSON.parse(raw) as { userId?: string; expiresAt?: number; portalId?: string };
+  const user = session.userId ? await db().users.get(session.userId) : undefined;
+  const allowed = !!user && session.expiresAt && session.expiresAt > Date.now() && (user.role === "admin" || (session.portalId === categoryId && user.categoryIds.includes(categoryId)));
+  if (!allowed) {
+    if (user) await logPortalAccess(user.id, categoryId, false);
+    throw new Error("You do not have access to this portal.");
+  }
+}
+
+const categorySchema = z.object({ name: z.string().trim().min(1).max(80), accent: z.enum(["a", "b", "c", "amber", "rose"]), attributes: z.array(z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(80), type: z.enum(["text", "number", "date", "select"]), options: z.array(z.string()).optional(), required: z.boolean().optional() })).max(30) });
+const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), unitValue: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
+
+async function passwordDigest(password: string) {
+  const bytes = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 /* ---------------- users & access ---------------- */
 
 export async function ensureDefaultAdmin() {
@@ -120,7 +155,7 @@ export async function ensureDefaultAdmin() {
     id: uid(),
     name: "Administrator",
     email: "admin@veridian.local",
-    password: "admin123",
+    passwordHash: await passwordDigest("admin123"),
     role: "admin",
     categoryIds: [],
     createdAt: new Date().toISOString(),
@@ -131,10 +166,19 @@ export async function ensureDefaultAdmin() {
 
 export async function authenticate(email: string, password: string) {
   const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
-  return user && user.password === password ? user : null;
+  if (!user) return null;
+  const accepted = user.passwordHash ? user.passwordHash === await passwordDigest(password) : user.password === password;
+  if (!accepted) return null;
+  // Seamlessly remove credentials from older v2 installations after a successful login.
+  if (!user.passwordHash) {
+    const passwordHash = await passwordDigest(password);
+    await db().users.update(user.id, { passwordHash, password: undefined });
+    return { ...user, passwordHash, password: undefined };
+  }
+  return user;
 }
 
-export async function registerUser(input: Pick<User, "name" | "email" | "password">) {
+export async function registerUser(input: { name: string; email: string; password: string }) {
   const email = input.email.trim().toLowerCase();
   const existing = await db().users.where("email").equals(email).first();
   if (existing) throw new Error("An account with this email already exists.");
@@ -143,7 +187,7 @@ export async function registerUser(input: Pick<User, "name" | "email" | "passwor
     id: uid(),
     name: input.name.trim(),
     email,
-    password: input.password,
+    passwordHash: await passwordDigest(input.password),
     role: "staff",
     categoryIds: [],
     createdAt: new Date().toISOString(),
@@ -155,7 +199,7 @@ export async function registerUser(input: Pick<User, "name" | "email" | "passwor
 export async function resetPassword(email: string, password: string) {
   const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
   if (!user) return false;
-  await db().users.update(user.id, { password });
+  await db().users.update(user.id, { passwordHash: await passwordDigest(password), password: undefined });
   return true;
 }
 
@@ -167,12 +211,12 @@ export async function listUsers() {
   return db().users.orderBy("createdAt").toArray();
 }
 
-export async function createStaff(input: Pick<User, "name" | "email" | "password" | "categoryIds">) {
+export async function createStaff(input: { name: string; email: string; password: string; categoryIds: string[] }) {
   const user: User = {
     id: uid(),
     name: input.name.trim(),
     email: input.email.trim().toLowerCase(),
-    password: input.password,
+    passwordHash: await passwordDigest(input.password),
     role: "staff",
     categoryIds: input.categoryIds,
     createdAt: new Date().toISOString(),
@@ -181,10 +225,12 @@ export async function createStaff(input: Pick<User, "name" | "email" | "password
   return user;
 }
 
-export async function updateStaff(id: string, patch: Partial<Pick<User, "name" | "email" | "password" | "categoryIds">>) {
+export async function updateStaff(id: string, patch: Partial<{ name: string; email: string; password: string; categoryIds: string[] }>) {
+  const { password, ...safePatch } = patch;
   await db().users.update(id, {
-    ...patch,
-    ...(patch.email ? { email: patch.email.trim().toLowerCase() } : {}),
+    ...safePatch,
+    ...(safePatch.email ? { email: safePatch.email.trim().toLowerCase() } : {}),
+    ...(password ? { passwordHash: await passwordDigest(password), password: undefined } : {}),
   });
 }
 
@@ -197,7 +243,7 @@ export async function deleteStaff(id: string) {
 /* ---------------- categories ---------------- */
 
 export async function listCategories() {
-  return db().categories.orderBy("createdAt").toArray();
+  return db().categories.filter((category) => !category.deletedAt).toArray();
 }
 
 export async function createCategory(
@@ -228,6 +274,16 @@ export async function updateCategory(id: string, patch: Partial<Category>) {
 }
 
 export async function deleteCategory(id: string) {
+  const d = db();
+  await d.transaction("rw", d.categories, d.items, d.activity, async () => {
+    const current = await d.categories.get(id);
+    if (!current || current.deletedAt) return;
+    const at = new Date().toISOString();
+    await d.categories.update(id, { deletedAt: at });
+    await d.items.where("categoryId").equals(id).modify({ deletedAt: at, status: "archived", updatedAt: at });
+    await d.activity.add({ id: uid(), at, kind: "category-deleted", message: `Archived category ${current.name}`, categoryId: id, reason: "Category archived" });
+  });
+  return;
   const c = await db().categories.get(id);
   await db().items.where("categoryId").equals(id).delete();
   await db().categories.delete(id);
@@ -240,32 +296,50 @@ export async function deleteCategory(id: string) {
 /* ---------------- items ---------------- */
 
 export async function listItems() {
-  return db().items.toArray();
+  return db().items.filter((item) => !item.deletedAt).toArray();
 }
 
 export async function createItem(
   input: Omit<Item, "id" | "updatedAt" | "dateAdded"> & { dateAdded?: string },
 ): Promise<Item> {
+  await assertPortalAccess(input.categoryId);
   const now = new Date().toISOString();
-  const item: Item = {
+  const item = itemSchema.parse({
     ...input,
     dateAdded: input.dateAdded || now,
     id: uid(),
     updatedAt: now,
-  };
-  await db().items.add(item);
-  await log({
-    kind: "item-created",
-    message: `Added ${item.name} (${item.quantity} in stock)`,
-    itemId: item.id,
-    categoryId: item.categoryId,
-    delta: item.quantity,
+  }) as Item;
+  (item as Item).id = uid();
+  (item as Item).updatedAt = now;
+  const d = db();
+  await d.transaction("rw", d.items, d.activity, async () => {
+    await d.items.add(item);
+    await d.activity.add({ id: uid(), at: now, kind: "item-created", message: `Added ${item.name} (${item.quantity} in stock)`, itemId: item.id, categoryId: item.categoryId, delta: item.quantity });
   });
   return item;
 }
 
+export async function logPortalAccess(userId: string, categoryId: string, allowed: boolean) {
+  await db().activity.add({ id: uid(), at: new Date().toISOString(), kind: "item-updated", message: allowed ? "Portal access granted" : "Unauthorized portal access blocked", userId, categoryId, allowed, reason: "Portal selection" });
+}
+
+async function ensureDemoStaff() {
+  const existing = await db().users.where("email").equals("staff@veridian.local").first();
+  if (existing) return existing;
+  const category = await db().categories.filter((entry) => !entry.deletedAt).first();
+  if (!category) return null;
+  return createStaff({
+    name: "Demo Staff",
+    email: "staff@veridian.local",
+    password: "staff123",
+    categoryIds: [category.id],
+  });
+}
+
 export async function updateItem(id: string, patch: Partial<Item>) {
   const before = await db().items.get(id);
+  if (before) await assertPortalAccess(before.categoryId);
   await db().items.update(id, { ...patch, updatedAt: new Date().toISOString() });
   const after = await db().items.get(id);
   if (before && after && before.quantity !== after.quantity) {
@@ -288,6 +362,20 @@ export async function updateItem(id: string, patch: Partial<Item>) {
 }
 
 export async function adjustStock(id: string, delta: number, reason: string) {
+  if (!Number.isFinite(delta) || delta === 0) throw new Error("Stock adjustment must be a non-zero number.");
+  if (!reason.trim()) throw new Error("A reason is required for every stock adjustment.");
+  const d = db();
+  const target = await d.items.get(id);
+  if (target) await assertPortalAccess(target.categoryId);
+  await d.transaction("rw", d.items, d.activity, async () => {
+    const current = await d.items.get(id);
+    if (!current || current.deletedAt) throw new Error("Item not found.");
+    const next = Math.max(0, current.quantity + delta);
+    const at = new Date().toISOString();
+    await d.items.update(id, { quantity: next, updatedAt: at });
+    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${current.name}: ${current.quantity} to ${next}`, itemId: id, categoryId: current.categoryId, delta: next - current.quantity, reason: reason.trim() });
+  });
+  return;
   const item = await db().items.get(id);
   if (!item) return;
   const next = Math.max(0, item.quantity + delta);
@@ -303,11 +391,41 @@ export async function adjustStock(id: string, delta: number, reason: string) {
 }
 
 export async function deleteItem(id: string) {
+  const d = db();
+  const target = await d.items.get(id);
+  if (target) await assertPortalAccess(target.categoryId);
+  await d.transaction("rw", d.items, d.activity, async () => {
+    const current = await d.items.get(id);
+    if (!current || current.deletedAt) return;
+    const at = new Date().toISOString();
+    await d.items.update(id, { deletedAt: at, status: "archived", updatedAt: at });
+    await d.activity.add({ id: uid(), at, kind: "item-deleted", message: `Archived ${current.name}`, itemId: id, categoryId: current.categoryId, reason: "Item archived" });
+  });
+  return;
   const item = await db().items.get(id);
   await db().items.delete(id);
   if (item) {
     await log({ kind: "item-deleted", message: `Deleted ${item.name}`, categoryId: item.categoryId });
   }
+}
+
+/** Reverses an adjustment only while it is still the most recent stock change for that item. */
+export async function undoStockAdjustment(activityId: string) {
+  const d = db();
+  return d.transaction("rw", d.items, d.activity, async () => {
+    const adjustment = await d.activity.get(activityId);
+    if (!adjustment?.itemId || adjustment.kind !== "stock-adjusted" || adjustment.reversedAt || !adjustment.delta) return false;
+    const latest = (await d.activity.where("itemId").equals(adjustment.itemId).toArray()).sort((a, b) => b.at.localeCompare(a.at))[0];
+    if (latest?.id !== activityId) throw new Error("Only the latest stock change can be undone.");
+    const item = await d.items.get(adjustment.itemId);
+    if (!item || item.deletedAt) return false;
+    const next = Math.max(0, item.quantity - adjustment.delta);
+    const at = new Date().toISOString();
+    await d.items.update(item.id, { quantity: next, updatedAt: at });
+    await d.activity.update(activityId, { reversedAt: at });
+    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${item.name}: undid previous adjustment`, itemId: item.id, categoryId: item.categoryId, delta: next - item.quantity, reason: "Undo last adjustment" });
+    return true;
+  });
 }
 
 /* ---------------- activity ---------------- */
@@ -326,7 +444,10 @@ export async function itemHistory(itemId: string) {
 export async function seedIfEmpty() {
   await ensureDefaultAdmin();
   const count = await db().categories.count();
-  if (count > 0) return;
+  if (count > 0) {
+    await ensureDemoStaff();
+    return;
+  }
 
   const doors = await createCategory({
     name: "Doors",
@@ -415,6 +536,7 @@ export async function seedIfEmpty() {
   ];
 
   for (const s of seeds) await createItem(s);
+  await ensureDemoStaff();
 }
 
 /* ---------------- backup ---------------- */

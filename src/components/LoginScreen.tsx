@@ -1,12 +1,15 @@
-import { ArrowLeft, KeyRound, LockKeyhole, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, Warehouse } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import type { User } from "@/lib/db";
 
 type AuthMode = "login" | "signup" | "forgot";
+type EntryRole = User["role"];
 
 export function LoginScreen() {
   const { login, signup, forgotPassword } = useAuth();
+  const [entry, setEntry] = useState<EntryRole | null>(null);
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,8 +22,8 @@ export function LoginScreen() {
     setSaving(true);
     try {
       if (mode === "login") {
-        const ok = await login(email, password);
-        if (!ok) toast.error("Incorrect email or password.");
+        const ok = await login(email, password, entry ?? "staff");
+        if (!ok) toast.error(`Incorrect ${entry === "admin" ? "admin" : "staff"} email or password.`);
         return;
       }
 
@@ -54,6 +57,14 @@ export function LoginScreen() {
 
   const isLogin = mode === "login";
   const isSignup = mode === "signup";
+  const isLanding = entry === null;
+  const title = isLogin ? "Welcome back" : isSignup ? "Create your workspace" : "Recover access";
+  const roleLabel = entry === "admin" ? "Admin workspace" : "Staff workspace";
+  const description = isLogin
+    ? "Sign in to keep every item, movement, and decision in view."
+    : isSignup
+      ? "Set up a private StockLine account for your inventory team."
+      : "Choose a new password for your local StockLine account.";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#102225] text-fog">
@@ -61,41 +72,67 @@ export function LoginScreen() {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('/login-background.jpg'), url('https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=2200&q=85')",
+            "url('/login-background.jpg'), url('https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=2200&q=85')",
         }}
         aria-hidden="true"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,24,27,0.88),rgba(8,24,27,0.62)_48%,rgba(8,24,27,0.3))]" aria-hidden="true" />
-      <div className="relative grid min-h-screen place-items-center px-4 py-8 lg:place-items-stretch lg:grid-cols-[minmax(0,1fr)_minmax(360px,480px)] lg:gap-10 lg:px-12">
-        <section className="hidden flex-col justify-end pb-10 text-white lg:flex">
-          <p className="label-mono text-white/70">Inventory control, clearly visible</p>
-          <h2 className="mt-3 max-w-xl font-display text-5xl leading-[0.95]">Every unit accounted for.</h2>
-          <p className="mt-4 max-w-md text-sm leading-6 text-white/75">StockLine gives your team a calm, reliable view of what is moving through the operation.</p>
-        </section>
-        <form onSubmit={submit} className="glass relative w-full max-w-md self-center rounded-3xl p-6 sm:p-8 lg:justify-self-end">
-        <div className="mb-7 flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background"><LockKeyhole className="size-5" /></span>
-          <div><p className="font-display text-2xl font-semibold text-strong">StockLine</p><p className="label-mono mt-0.5">Inventory workspace</p></div>
-        </div>
-        <div className="flex items-center gap-2">
-          {mode !== "login" && <button type="button" onClick={() => setMode("login")} className="text-fog/70 hover:text-strong"><ArrowLeft className="size-4" /></button>}
-          <div>
-            <h1 className="font-display text-xl font-semibold text-strong">{isLogin ? "Sign in" : isSignup ? "Create your account" : "Reset your password"}</h1>
-            <p className="mt-1 text-sm text-fog/80">{isLogin ? "Use your StockLine account to continue." : isSignup ? "Start managing your inventory in a private workspace." : "Set a new password for your local account."}</p>
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,20,22,0.58),rgba(5,20,22,0.35)_45%,rgba(5,20,22,0.12))]" aria-hidden="true" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(77,208,170,0.1),transparent_28%),radial-gradient(circle_at_85%_85%,rgba(235,157,101,0.08),transparent_26%)]" aria-hidden="true" />
+      <div className="relative min-h-screen px-4 py-5 sm:px-6 lg:px-12">
+        <header className="mx-auto flex max-w-7xl items-center justify-between border-b border-white/15 pb-4">
+          <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex items-center gap-3 text-left">
+            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background"><LockKeyhole className="size-4" /></span>
+            <span><span className="block font-display text-2xl leading-none text-white">StockLine</span><span className="label-mono mt-1 block text-white/60">Inventory workspace</span></span>
+          </button>
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:px-4 ${entry === "staff" ? "bg-aurora-a text-background" : "text-aurora-a hover:bg-aurora-a/10"}`}>Staff login</button>
+            <button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors sm:px-4 ${entry === "admin" ? "border-aurora-a bg-aurora-a/15 text-aurora-a" : "border-white/15 text-aurora-a hover:border-aurora-a/60 hover:bg-aurora-a/10"}`}>Admin login</button>
+          </nav>
+        </header>
+        <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl place-items-center lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:gap-12">
+        <section className={`${isLanding ? "hidden" : "hidden lg:flex"} flex-col justify-end pb-12 text-white`}>
+          <div className="mb-7 flex items-center gap-2 text-white/70">
+            <span className="h-px w-8 bg-aurora-a" />
+            <p className="label-mono text-white/70">Inventory control, clearly visible</p>
           </div>
+          <h2 className="max-w-xl font-display text-6xl leading-[0.9] tracking-tight">Know what moves.<br /><span className="text-aurora-a">Move with confidence.</span></h2>
+          <p className="mt-6 max-w-md text-sm leading-6 text-white/70">StockLine gives your team a calm, reliable view of what is moving through the operation.</p>
+          <div className="mt-8 flex gap-3">
+            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80">Live stock view</span>
+            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80">Private by default</span>
+          </div>
+        </section>
+        {isLanding ? (
+          <section className="w-full max-w-lg self-center text-center lg:justify-self-end lg:text-left">
+            <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/10 text-aurora-a shadow-2xl backdrop-blur-sm lg:mx-0"><Warehouse className="size-7" /></div>
+            <p className="label-mono mt-6 text-white/65">One clear view of your operation</p>
+            <h1 className="mt-3 font-display text-5xl leading-[0.92] text-white sm:text-6xl">Know what moves.<br /><span className="text-aurora-a">Move with confidence.</span></h1>
+            <p className="mt-5 max-w-md text-sm leading-6 text-white/70">Track stock, movement, categories, and value from one clear, reliable workspace.</p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"><button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className="group flex items-center gap-2 rounded-xl bg-aurora-a px-4 py-3 text-sm font-semibold text-background shadow-lg shadow-aurora-a/20">Enter as staff <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></button><button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white backdrop-blur-sm">Admin workspace</button></div>
+          </section>
+        ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/10 bg-[#071d1b]/90 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-5 lg:justify-self-end">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background shadow-lg shadow-aurora-a/20"><LockKeyhole className="size-4" /></span>
+            <div><p className="font-display text-[22px] font-semibold leading-none text-strong">StockLine</p><p className="label-mono mt-1">Inventory workspace</p></div>
+          </div>
+          <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-aurora-a sm:flex"><span className="size-1.5 rounded-full bg-aurora-a" /> Secure</span>
         </div>
-        {isSignup && <label className="mt-6 block text-xs text-fog">Name<input required autoComplete="name" className="field mt-1.5" value={name} onChange={(e) => setName(e.target.value)} /></label>}
-        <label className={`${isSignup ? "mt-4" : "mt-6"} block text-xs text-fog`}>Email<input required type="email" autoComplete="email" className="field mt-1.5" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-        {!isLogin && <p className="mt-2 text-xs text-fog/60">Password changes are stored only in this browser.</p>}
-        {isLogin && <label className="mt-4 block text-xs text-fog">Password<input required type="password" autoComplete="current-password" className="field mt-1.5" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
-        {!isLogin && <>
-          <label className="mt-4 block text-xs text-fog">New password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-1.5" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
-          <label className="mt-4 block text-xs text-fog">Confirm password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-1.5" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label>
-        </>}
-        <button disabled={saving} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b px-4 py-2.5 text-sm font-semibold text-background disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}</button>
-        {isLogin && <div className="mt-5 flex justify-between text-xs"><button type="button" onClick={() => setMode("forgot")} className="text-aurora-a hover:underline">Forgot password?</button><button type="button" onClick={() => setMode("signup")} className="text-aurora-a hover:underline">Create account</button></div>}
-        {isLogin && <p className="mt-5 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-xs leading-relaxed text-fog/85">First-time admin: <strong className="text-strong">admin@veridian.local</strong> / <strong className="text-strong">admin123</strong>.</p>}
-        </form>
+        <div className="flex items-start gap-3">
+          {mode !== "login" && <button type="button" aria-label="Back to sign in" onClick={() => setMode("login")} className="mt-1 grid size-7 place-items-center rounded-lg text-fog/70 transition-colors hover:bg-white/5 hover:text-strong"><ArrowLeft className="size-4" /></button>}
+          <div><p className="label-mono mb-2 text-aurora-a">{roleLabel}</p><h1 className="font-display text-2xl font-semibold leading-none text-strong">{title}</h1><p className="mt-2 max-w-sm text-[13px] leading-5 text-fog/70">{description}</p></div>
+        </div>
+        <div className="mt-4 space-y-2.5">
+          {isSignup && <label className="block text-xs font-medium text-fog">Name<div className="relative mt-2"><UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required autoComplete="name" className="field pl-10" value={name} onChange={(e) => setName(e.target.value)} /></div></label>}
+          <label className="block text-xs font-medium text-fog">Email<div className="relative mt-2"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field pl-10" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
+          {isLogin && <label className="block text-xs font-medium text-fog">Password<input required type="password" autoComplete="current-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
+          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Password changes are stored only in this browser.</p></>}
+        </div>
+        <button disabled={saving} className="group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-all hover:brightness-105 disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}{isLogin && <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}</button>
+        {isLogin && entry === "staff" && <p className="mt-3 text-center text-xs text-fog/65">Need access? Ask an administrator to create your account and assign your categories.</p>}
+        {isLogin && <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber/20 bg-amber/8 px-2.5 py-2 text-xs leading-4 text-fog/70"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber" /><span>{entry === "staff" ? <>Demo staff access: <strong className="text-strong">staff@veridian.local</strong> / <strong className="text-strong">staff123</strong></> : <>Demo admin access: <strong className="text-strong">admin@veridian.local</strong> / <strong className="text-strong">admin123</strong></>}</span></div>}
+        </form>}
+        </div>
       </div>
     </main>
   );
