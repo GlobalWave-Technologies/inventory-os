@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartNoAxesCombined, Coins, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { LoadingPanels, EmptyState } from "@/components/Modal";
 import { accentVar, useCategories, useItems } from "@/lib/ledger";
@@ -29,6 +30,11 @@ function ProfitLossPage() {
       groups,
       original: groups.reduce((sum, group) => sum + group.original, 0),
       revenue: groups.reduce((sum, group) => sum + group.revenue, 0),
+      chart: groups.map((group) => ({
+        category: group.category.name,
+        revenue: group.revenue,
+        profit: group.profit,
+      })),
     };
   }, [items, categories]);
 
@@ -56,6 +62,8 @@ function ProfitLossPage() {
           <Summary label="Total revenue" value={report.revenue} icon={<ChartNoAxesCombined className="size-4" />} />
           <Summary label="Projected profit" value={profit} icon={profit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={profit >= 0 ? "text-aurora-a" : "text-rose"} />
         </div>
+
+        {report.groups.length > 0 && <AnalysisChart data={report.chart} />}
 
         {report.groups.length === 0 ? (
           <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No category data yet" body="Add items with original and sold prices to see profit and loss." />
@@ -96,6 +104,42 @@ function ProfitLossPage() {
         <p className="text-xs text-fog/60">Revenue and profit use units sold and the prices saved on each item. Totals include every category.</p>
       </div>
     </AppShell>
+  );
+}
+
+function AnalysisChart({ data }: { data: Array<{ category: string; revenue: number; profit: number }> }) {
+  const highest = data.reduce((best, current) => current.revenue > best.revenue ? current : best, data[0]);
+  const lowest = data.reduce((worst, current) => current.revenue < worst.revenue ? current : worst, data[0]);
+
+  return (
+    <section className="glass rounded-2xl p-4 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="label-mono">Analysis</p>
+          <h2 className="mt-1 font-display text-base font-semibold text-strong">Revenue and profit by category</h2>
+        </div>
+        <p className="text-xs text-fog/70">High: {highest.category} · Low: {lowest.category}</p>
+      </div>
+      <div className="mt-5 h-72 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+            <CartesianGrid stroke="var(--hair)" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="category" tick={{ fill: "var(--fog)", fontSize: 11 }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fill: "var(--fog)", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(value: number) => `GH₵${value >= 1000 ? `${Math.round(value / 1000)}k` : value}`} />
+            <Tooltip
+              contentStyle={{ background: "var(--panel)", border: "1px solid var(--hair)", borderRadius: 12, color: "var(--strong)" }}
+              formatter={(value: number, name: string) => [money(value), name === "revenue" ? "Revenue" : "Profit"]}
+            />
+            <Line type="monotone" dataKey="revenue" stroke="var(--aurora-a)" strokeWidth={3} dot={{ r: 4, fill: "var(--aurora-a)" }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="profit" stroke="var(--aurora-b)" strokeWidth={3} dot={{ r: 4, fill: "var(--aurora-b)" }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-fog/75">
+        <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-aurora-a" /> Revenue</span>
+        <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-aurora-b" /> Profit</span>
+      </div>
+    </section>
   );
 }
 
