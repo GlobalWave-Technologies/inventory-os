@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined, ClipboardList } from "lucide-react";
+import { Boxes, LayoutDashboard, Package, Settings, History, LogOut, ChartNoAxesCombined, ClipboardList } from "lucide-react";
 import type { ReactNode } from "react";
-import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
 import { useAuth } from "@/lib/auth";
 import { LoginScreen } from "@/components/LoginScreen";
@@ -31,19 +30,6 @@ function AuroraField() {
         style={{ animationDelay: "-8s" }}
       />
     </div>
-  );
-}
-
-function ThemeToggle() {
-  const { mode, toggle } = useTheme();
-  return (
-    <button
-      onClick={toggle}
-      aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      className="grid size-10 shrink-0 place-items-center rounded-xl border border-hair bg-panel/60 text-fog transition-colors hover:text-strong"
-    >
-      {mode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-    </button>
   );
 }
 
@@ -112,7 +98,6 @@ export function AppShell({
               </h1>
             </div>
             <div className="flex items-center justify-self-end gap-3 sm:gap-4">
-              <ThemeToggle />
               <span className="hidden text-right sm:block"><span className="block text-xs font-medium text-strong">{user.name}</span><span className="label-mono">{isAdmin ? "Admin" : "Staff"}</span></span>
               {actions}
             </div>
