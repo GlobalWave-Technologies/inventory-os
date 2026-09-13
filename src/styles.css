@@ -60,7 +60,7 @@
   --panel: oklch(1 0 0);
   --sidebar: oklch(0.987 0.008 96);
   --hair: oklch(0.89 0.018 96);
-  --fog: oklch(0.48 0.035 174);
+  --fog: oklch(0.39 0.035 174);
   --nav-active: oklch(0.92 0.035 169);
   --amber-soft: oklch(0.96 0.045 84);
   --overlay: oklch(0.16 0.025 174 / 62%);
@@ -74,7 +74,7 @@
   --secondary: oklch(0.94 0.025 167);
   --secondary-foreground: oklch(0.25 0.065 174);
   --muted: oklch(0.95 0.014 96);
-  --muted-foreground: oklch(0.48 0.035 174);
+  --muted-foreground: oklch(0.39 0.035 174);
   --accent: oklch(0.94 0.025 167);
   --accent-foreground: oklch(0.25 0.065 174);
   --destructive: oklch(0.65 0.17 32);
