@@ -14,6 +14,7 @@ import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as ProfitLossRouteImport } from './routes/profit-loss'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const ProfitLossRoute = ProfitLossRouteImport.update({
   path: '/profit-loss',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRoute
   '/items': typeof ItemsRoute
   '/profit-loss': typeof ProfitLossRoute
+  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/categories': typeof CategoriesRoute
   '/items': typeof ItemsRoute
   '/profit-loss': typeof ProfitLossRoute
+  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
@@ -70,15 +78,28 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRoute
   '/items': typeof ItemsRoute
   '/profit-loss': typeof ProfitLossRoute
+  '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/activity' | '/categories' | '/items' | '/profit-loss' | '/settings'
+    | '/'
+    | '/activity'
+    | '/categories'
+    | '/items'
+    | '/profit-loss'
+    | '/reports'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/activity' | '/categories' | '/items' | '/profit-loss' | '/settings'
+    | '/'
+    | '/activity'
+    | '/categories'
+    | '/items'
+    | '/profit-loss'
+    | '/reports'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -86,6 +107,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/items'
     | '/profit-loss'
+    | '/reports'
     | '/settings'
   fileRoutesById: FileRoutesById
 }
@@ -95,6 +117,7 @@ export interface RootRouteChildren {
   CategoriesRoute: typeof CategoriesRoute
   ItemsRoute: typeof ItemsRoute
   ProfitLossRoute: typeof ProfitLossRoute
+  ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -135,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfitLossRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -151,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesRoute: CategoriesRoute,
   ItemsRoute: ItemsRoute,
   ProfitLossRoute: ProfitLossRoute,
+  ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport

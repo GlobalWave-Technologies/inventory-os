@@ -54,6 +54,27 @@ export interface Item {
   deletedAt?: string;
 }
 
+export interface DailySalesLine {
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  originalPrice: number;
+  sellingPrice: number;
+}
+
+export interface DailySalesReport {
+  id: string;
+  reportDate: string;
+  categoryId: string;
+  submittedBy: string;
+  submittedAt: string;
+  lines: DailySalesLine[];
+  totalUnits: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
 export type ActivityKind =
   | "item-created"
   | "item-updated"
@@ -83,6 +104,7 @@ class LedgerDB extends Dexie {
   items!: Table<Item, string>;
   activity!: Table<Activity, string>;
   users!: Table<User, string>;
+  dailySalesReports!: Table<DailySalesReport, string>;
 
   constructor() {
     super("northern-ledger");
@@ -136,6 +158,13 @@ class LedgerDB extends Dexie {
         if (user.role === "staff") user.categoryIds = user.categoryIds.slice(0, 1);
       }),
     );
+    this.version(7).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+      dailySalesReports: "id, reportDate, categoryId, submittedBy, submittedAt",
+    });
   }
 }
 
@@ -363,6 +392,52 @@ export async function deleteCategory(id: string) {
 
 export async function listItems() {
   return db().items.filter((item) => !item.deletedAt).toArray();
+}
+
+export async function listDailySalesReports() {
+  return db().dailySalesReports.orderBy("reportDate").reverse().toArray();
+}
+
+export async function submitDailySalesReport(input: {
+  reportDate: string;
+  categoryId: string;
+  submittedBy: string;
+  lines: DailySalesLine[];
+}) {
+  await assertPortalAccess(input.categoryId);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.reportDate) || input.lines.length === 0) {
+    throw new Error("A report date and at least one sold item are required.");
+  }
+  const d = db();
+  const existing = await d.dailySalesReports
+    .where("reportDate").equals(input.reportDate)
+    .filter((report) => report.categoryId === input.categoryId && report.submittedBy === input.submittedBy)
+    .first();
+  if (existing) throw new Error("You already submitted a report for this category and date.");
+  const lines = input.lines.map((line) => ({
+    ...line,
+    quantity: Math.max(0, Math.floor(line.quantity)),
+    originalPrice: Math.max(0, line.originalPrice),
+    sellingPrice: Math.max(0, line.sellingPrice),
+  })).filter((line) => line.quantity > 0);
+  if (lines.length === 0) throw new Error("Enter at least one sold quantity.");
+  const report: DailySalesReport = {
+    id: uid(),
+    reportDate: input.reportDate,
+    categoryId: input.categoryId,
+    submittedBy: input.submittedBy,
+    submittedAt: new Date().toISOString(),
+    lines,
+    totalUnits: lines.reduce((sum, line) => sum + line.quantity, 0),
+    revenue: lines.reduce((sum, line) => sum + line.quantity * line.sellingPrice, 0),
+    cost: lines.reduce((sum, line) => sum + line.quantity * line.originalPrice, 0),
+    profit: lines.reduce((sum, line) => sum + line.quantity * (line.sellingPrice - line.originalPrice), 0),
+  };
+  await d.transaction("rw", d.dailySalesReports, d.activity, async () => {
+    await d.dailySalesReports.add(report);
+    await d.activity.add({ id: uid(), at: report.submittedAt, kind: "item-updated", message: `Submitted daily sales report for ${input.reportDate}`, categoryId: input.categoryId, userId: input.submittedBy, reason: "Immutable daily sales report" });
+  });
+  return report;
 }
 
 export async function createItem(

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined } from "lucide-react";
+import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined, ClipboardList } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
@@ -14,6 +14,7 @@ const nav = [
   { to: "/categories", label: "Categories", icon: Boxes },
   { to: "/activity", label: "Movement log", icon: History },
   { to: "/profit-loss", label: "Profit & loss", icon: ChartNoAxesCombined },
+  { to: "/reports", label: "Daily reports", icon: ClipboardList },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -136,7 +137,7 @@ export function AppShell({
 
       {/* mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 backdrop-blur-xl lg:hidden">
-        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 6 ? "grid-cols-6" : visibleNav.length === 5 ? "grid-cols-5" : visibleNav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 7 ? "grid-cols-7" : visibleNav.length === 6 ? "grid-cols-6" : visibleNav.length === 5 ? "grid-cols-5" : visibleNav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
           {visibleNav.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
