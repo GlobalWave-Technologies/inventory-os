@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Boxes, Pencil, Plus, Trash2 } from "lucide-react";
+import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { AppShell, PrimaryButton } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { CategoryForm } from "@/components/CategoryForm";
 import { accentVar, useAccessibleCategories, useAccessibleItems } from "@/lib/ledger";
-import { deleteCategory, type Category } from "@/lib/db";
+import { db, deleteCategory, type Category } from "@/lib/db";
 import { money } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 
@@ -34,6 +35,8 @@ function CategoriesPage() {
   const categories = useAccessibleCategories();
   const items = useAccessibleItems();
   const { isAdmin } = useAuth();
+  const activity = useLiveQuery(() => db().activity.toArray(), []) ?? [];
+  const users = useLiveQuery(() => db().users.toArray(), []) ?? [];
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
 
@@ -85,6 +88,8 @@ function CategoriesPage() {
             {categories.map((c, i) => {
               const mine = items.filter((it) => it.categoryId === c.id);
               const value = mine.reduce((s, it) => s + it.quantity * it.originalPrice, 0);
+              const staffIds = new Set(activity.filter((entry) => entry.categoryId === c.id && entry.userId).map((entry) => entry.userId));
+              const workedBy = users.filter((user) => staffIds.has(user.id));
               return (
                 <motion.article
                   key={c.id}
@@ -144,6 +149,19 @@ function CategoriesPage() {
                       ))
                     )}
                   </div>
+
+                  {isAdmin && (
+                    <div className="mt-4 border-t border-hair pt-3">
+                      <p className="label-mono flex items-center gap-1.5"><Users className="size-3" /> Staff activity</p>
+                      {workedBy.length === 0 ? (
+                        <p className="mt-1 text-xs text-fog/60">No staff activity recorded yet.</p>
+                      ) : (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {workedBy.map((user) => <span key={user.id} className="rounded-lg border border-hair bg-panel/50 px-2 py-1 text-xs text-fog">{user.name}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <Link
                     to="/items"

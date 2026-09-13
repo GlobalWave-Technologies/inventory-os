@@ -145,8 +145,17 @@ export const uid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+function currentUserId() {
+  try {
+    const session = JSON.parse(localStorage.getItem("veridian-session") ?? "null") as { userId?: string; expiresAt?: number } | null;
+    return session?.expiresAt && session.expiresAt > Date.now() ? session.userId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function log(entry: Omit<Activity, "id" | "at">) {
-  await db().activity.add({ ...entry, id: uid(), at: new Date().toISOString() });
+  await db().activity.add({ ...entry, userId: entry.userId ?? currentUserId(), id: uid(), at: new Date().toISOString() });
 }
 
 async function assertPortalAccess(categoryId: string) {
@@ -325,7 +334,7 @@ export async function deleteCategory(id: string) {
     const at = new Date().toISOString();
     await d.categories.update(id, { deletedAt: at });
     await d.items.where("categoryId").equals(id).modify({ deletedAt: at, status: "archived", updatedAt: at });
-    await d.activity.add({ id: uid(), at, kind: "category-deleted", message: `Archived category ${current.name}`, categoryId: id, reason: "Category archived" });
+    await d.activity.add({ id: uid(), at, kind: "category-deleted", message: `Archived category ${current.name}`, categoryId: id, userId: currentUserId(), reason: "Category archived" });
   });
   return;
   const c = await db().categories.get(id);
@@ -359,7 +368,7 @@ export async function createItem(
   const d = db();
   await d.transaction("rw", d.items, d.activity, async () => {
     await d.items.add(item);
-    await d.activity.add({ id: uid(), at: now, kind: "item-created", message: `Added ${item.name} (${item.quantity} in stock)`, itemId: item.id, categoryId: item.categoryId, delta: item.quantity });
+    await d.activity.add({ id: uid(), at: now, kind: "item-created", message: `Added ${item.name} (${item.quantity} in stock)`, itemId: item.id, categoryId: item.categoryId, userId: currentUserId(), delta: item.quantity });
   });
   return item;
 }
@@ -417,7 +426,7 @@ export async function adjustStock(id: string, delta: number, reason: string) {
     const next = Math.max(0, current.quantity + delta);
     const at = new Date().toISOString();
     await d.items.update(id, { quantity: next, updatedAt: at });
-    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${current.name}: ${current.quantity} to ${next}`, itemId: id, categoryId: current.categoryId, delta: next - current.quantity, reason: reason.trim() });
+    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${current.name}: ${current.quantity} to ${next}`, itemId: id, categoryId: current.categoryId, userId: currentUserId(), delta: next - current.quantity, reason: reason.trim() });
   });
   return;
   const item = await db().items.get(id);
@@ -443,7 +452,7 @@ export async function deleteItem(id: string) {
     if (!current || current.deletedAt) return;
     const at = new Date().toISOString();
     await d.items.update(id, { deletedAt: at, status: "archived", updatedAt: at });
-    await d.activity.add({ id: uid(), at, kind: "item-deleted", message: `Archived ${current.name}`, itemId: id, categoryId: current.categoryId, reason: "Item archived" });
+    await d.activity.add({ id: uid(), at, kind: "item-deleted", message: `Archived ${current.name}`, itemId: id, categoryId: current.categoryId, userId: currentUserId(), reason: "Item archived" });
   });
   return;
   const item = await db().items.get(id);
@@ -467,7 +476,7 @@ export async function undoStockAdjustment(activityId: string) {
     const at = new Date().toISOString();
     await d.items.update(item.id, { quantity: next, updatedAt: at });
     await d.activity.update(activityId, { reversedAt: at });
-    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${item.name}: undid previous adjustment`, itemId: item.id, categoryId: item.categoryId, delta: next - item.quantity, reason: "Undo last adjustment" });
+    await d.activity.add({ id: uid(), at, kind: "stock-adjusted", message: `${item.name}: undid previous adjustment`, itemId: item.id, categoryId: item.categoryId, userId: currentUserId(), delta: next - item.quantity, reason: "Undo last adjustment" });
     return true;
   });
 }
