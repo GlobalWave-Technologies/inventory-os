@@ -101,7 +101,6 @@ export function AppShell({
           <div className="mt-auto rounded-2xl border border-hair bg-panel/60 p-3">
             <p className="truncate px-1 text-sm font-medium text-strong">{user.name}</p>
             <p className="label-mono mt-0.5 px-1">{isAdmin ? "Administrator" : "Staff account"}</p>
-            {!isAdmin && <button onClick={clearPortal} className="mt-2 text-xs text-aurora-a hover:text-strong">Switch portal</button>}
             <p className="label-mono px-1">Storage</p>
             <p className="mt-2 px-1 text-xs leading-relaxed text-fog/80">
               Everything is saved in this browser only. Export a backup regularly.
