@@ -126,6 +126,16 @@ class LedgerDB extends Dexie {
         item.soldQuantity ??= 0;
       }),
     );
+    this.version(6).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+    }).upgrade((tx) =>
+      tx.table("users").toCollection().modify((user: User) => {
+        if (user.role === "staff") user.categoryIds = user.categoryIds.slice(0, 1);
+      }),
+    );
   }
 }
 
@@ -263,13 +273,14 @@ export async function listUsers() {
 
 export async function createStaff(input: { name: string; email: string; password: string; categoryIds: string[] }) {
   if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
+  const categoryIds = input.categoryIds.slice(0, 1);
   const user: User = {
     id: uid(),
     name: input.name.trim(),
     email: normalizeEmail(input.email),
     passwordHash: await passwordDigest(input.password),
     role: "staff",
-    categoryIds: input.categoryIds,
+    categoryIds,
     createdAt: new Date().toISOString(),
   };
   await db().users.add(user);
@@ -280,9 +291,11 @@ export async function updateStaff(id: string, patch: Partial<{ name: string; ema
   const { password, ...safePatch } = patch;
   if (password && password.length < 8) throw new Error("Password must be at least 8 characters.");
   const email = safePatch.email ? normalizeEmail(safePatch.email) : undefined;
+  const categoryIds = safePatch.categoryIds?.slice(0, 1);
   await db().users.update(id, {
     ...safePatch,
     ...(email ? { email } : {}),
+    ...(categoryIds ? { categoryIds } : {}),
     ...(password ? { passwordHash: await passwordDigest(password), password: undefined } : {}),
   });
 }
