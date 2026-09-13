@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useHydrated } from "./theme";
 import { useAuth } from "./auth";
 import {
@@ -15,9 +15,12 @@ import {
 
 export function useBootstrap() {
   const hydrated = useHydrated();
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (hydrated) void seedIfEmpty();
+    if (!hydrated) return;
+    void seedIfEmpty().finally(() => setReady(true));
   }, [hydrated]);
+  return ready;
 }
 
 export function useCategories(): Category[] | undefined {

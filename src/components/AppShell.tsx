@@ -6,6 +6,7 @@ import { useBootstrap } from "@/lib/ledger";
 import { useAuth } from "@/lib/auth";
 import { LoginScreen } from "@/components/LoginScreen";
 import { PortalPicker } from "@/components/PortalPicker";
+import { LoadingPanels } from "@/components/Modal";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -44,11 +45,14 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  useBootstrap();
+  const bootstrapped = useBootstrap();
   const { user, isAdmin, logout, portalId } = useAuth();
 
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
+  if (!bootstrapped) {
+    return <main className="min-h-screen bg-background p-4 pt-8 sm:p-8"><LoadingPanels count={4} /></main>;
+  }
   if (!isAdmin && !portalId) return <PortalPicker />;
   const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/profit-loss"));
 
