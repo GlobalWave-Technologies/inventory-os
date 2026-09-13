@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, KeyRound, LockKeyhole, Mail, ShieldCheck, UserPlus, Warehouse } from "lucide-react";
+import { ArrowLeft, ArrowRight, KeyRound, Mail, ShieldCheck, UserPlus, Warehouse } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -81,7 +81,7 @@ export function LoginScreen() {
       <div className="relative min-h-screen px-4 py-5 sm:px-6 lg:px-12">
         <header className="mx-auto flex max-w-7xl items-center justify-between gap-2 border-b border-white/15 pb-4">
           <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex min-w-0 items-center gap-2 text-left sm:gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background sm:size-10"><LockKeyhole className="size-4" /></span>
+            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-12 shrink-0 rounded-lg bg-white object-contain sm:size-14" />
             <span className="min-w-0"><span className="block truncate font-display text-[25px] leading-none text-white sm:text-2xl">StockLine</span><span className="label-mono mt-1 hidden text-white/70 sm:block">Inventory workspace</span></span>
           </button>
           <nav className="flex shrink-0 items-center gap-1.5 sm:gap-3">
@@ -113,7 +113,7 @@ export function LoginScreen() {
         ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/35 bg-[#071d1b]/95 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-5 lg:justify-self-end">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background shadow-lg shadow-aurora-a/20"><LockKeyhole className="size-4" /></span>
+            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-12 shrink-0 rounded-lg bg-white object-contain" />
             <div><p className="font-display text-[22px] font-semibold leading-none text-white">StockLine</p><p className="label-mono mt-1 text-white/65">Inventory workspace</p></div>
           </div>
           <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-aurora-a sm:flex"><span className="size-1.5 rounded-full bg-aurora-a" /> Secure</span>

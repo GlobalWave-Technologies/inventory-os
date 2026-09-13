@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut } from "lucide-react";
+import { ArrowLeft, Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
@@ -57,6 +57,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   useBootstrap();
+  const router = useRouter();
   const { user, isAdmin, logout, portalId, clearPortal } = useAuth();
 
   if (user === undefined) return null;
@@ -72,9 +73,7 @@ export function AppShell({
         {/* desktop rail */}
         <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col gap-6 lg:flex">
           <div className="flex items-center gap-3 px-2">
-            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c font-mono text-sm font-semibold text-background shadow-lg shadow-aurora-b/20">
-              V
-            </div>
+            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-12 shrink-0 rounded-lg bg-white object-contain" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-strong">StockLine</p>
               <p className="label-mono mt-0.5">Inventory OS</p>
@@ -114,7 +113,23 @@ export function AppShell({
         <main className="ml-0 w-full min-w-0 flex-1 lg:ml-8">
           <header className="mb-5 grid grid-cols-1 items-center gap-4 sm:flex sm:flex-wrap sm:justify-between sm:gap-3">
             <div className="min-w-0">
-              <p className="label-mono">{eyebrow}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.history.length > 1) {
+                      router.history.back();
+                    } else {
+                      router.navigate({ to: "/" });
+                    }
+                  }}
+                  aria-label="Go back"
+                  className="grid size-8 shrink-0 place-items-center rounded-lg border border-hair bg-panel/60 text-fog transition-colors hover:text-strong"
+                >
+                  <ArrowLeft className="size-4" />
+                </button>
+                <p className="label-mono">{eyebrow}</p>
+              </div>
               <h1 className="truncate font-display text-xl font-semibold text-strong sm:text-2xl">
                 {title}
               </h1>

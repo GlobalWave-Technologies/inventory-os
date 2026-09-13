@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+  <title id="title">Inventory Control</title>
+  <desc id="desc">Cube surrounded by three circular arrows with Inventory Control text below</desc>
+  <rect width="320" height="320" fill="#fff"/>
+  <g fill="none" stroke="#171717" stroke-linecap="round" stroke-width="8">
+    <path d="M164 45a83 83 0 0 1 72 43"/>
+    <path d="M249 102a83 83 0 0 1-4 93"/>
+    <path d="M230 225a83 83 0 0 1-84 36"/>
+    <path d="M126 258a83 83 0 0 1-67-65"/>
+    <path d="M57 170a83 83 0 0 1 55-108"/>
+    <path d="M132 48a83 83 0 0 1 32-3"/>
+  </g>
+  <g fill="#171717">
+    <path d="m164 31 21 16-21 16z"/>
+    <path d="m258 103-9 26-16-21z"/>
+    <path d="m146 278-21-16 21-16z"/>
+    <path d="m57 157 16 22H41z"/>
+  </g>
+  <g stroke="#171717" stroke-linejoin="round" stroke-width="7">
+    <path fill="#fff" d="m111 116 48-27 48 27-48 28z"/>
+    <path fill="#fff" d="M111 116v57l48 28v-57z"/>
+    <path fill="#252525" d="M207 116v57l-48 28v-57z"/>
+    <path fill="none" d="M159 144v57"/>
+    <path fill="none" d="m111 116 48 28 48-28"/>
+  </g>
+  <text x="160" y="300" fill="#171717" font-family="Arial, Helvetica, sans-serif" font-size="19" text-anchor="middle">INVENTORY CONTROL</text>
+</svg>
