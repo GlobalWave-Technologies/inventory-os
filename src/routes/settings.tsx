@@ -8,7 +8,7 @@ import { useCategories, useItems } from "@/lib/ledger";
 import { clearAll, exportSnapshot, importSnapshot, type Snapshot } from "@/lib/db";
 import { money } from "@/lib/format";
 import { Modal, Field } from "@/components/Modal";
-import { createStaff, db, deleteStaff, updateStaff, type User } from "@/lib/db";
+import { changePassword, createStaff, db, deleteStaff, updateStaff, type User } from "@/lib/db";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/settings")({
@@ -39,7 +39,7 @@ function download(name: string, content: string, type: string) {
 const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 
 function SettingsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const items = useItems();
   const categories = useCategories();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -115,6 +115,7 @@ function SettingsPage() {
   return (
     <AppShell eyebrow="Data" title="Settings">
       <div className="flex flex-col gap-4">
+        <PasswordManager userId={user?.id ?? ""} />
         <StaffManager />
         <section className="glass rounded-2xl border-amber/30 p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -191,6 +192,52 @@ function SettingsPage() {
   );
 }
 
+function PasswordManager({ userId }: { userId: string }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [nextPassword, setNextPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+
+  async function save() {
+    if (Date.now() < lockedUntil) return toast.error("Too many failed attempts. Try again in 30 seconds.");
+    if (!currentPassword || !nextPassword) return toast.error("Enter your current and new password.");
+    if (nextPassword.length < 8) return toast.error("Your new password must be at least 8 characters.");
+    if (currentPassword === nextPassword) return toast.error("Your new password must be different.");
+    if (nextPassword !== confirmPassword) return toast.error("The new passwords do not match.");
+    const changed = await changePassword(userId, currentPassword, nextPassword);
+    if (!changed) {
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      if (attempts >= 5) {
+        setLockedUntil(Date.now() + 30000);
+        setFailedAttempts(0);
+      }
+      return toast.error("Unable to change password. Check your current password.");
+    }
+    setFailedAttempts(0);
+    setCurrentPassword("");
+    setNextPassword("");
+    setConfirmPassword("");
+    toast.success("Password changed successfully");
+    return;
+  }
+
+  return (
+    <section className="glass rounded-2xl p-4 sm:p-5">
+      <p className="label-mono">Account security</p>
+      <h2 className="mt-1 font-display text-lg font-semibold text-strong">Change password</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <Field label="Current password"><input type="password" className="field" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" /></Field>
+        <Field label="New password"><input type="password" className="field" value={nextPassword} onChange={(e) => setNextPassword(e.target.value)} autoComplete="new-password" /></Field>
+        <Field label="Confirm new password"><input type="password" className="field" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" /></Field>
+      </div>
+      <p className="mt-3 text-xs text-fog/60">Use at least 8 characters. Five failed attempts temporarily lock this form.</p>
+      <PrimaryButton className="mt-4" onClick={() => void save()}>Change password</PrimaryButton>
+    </section>
+  );
+}
+
 function StaffManager() {
   const categories = useCategories() ?? [];
   const users = useLiveQuery(() => db().users.orderBy("createdAt").toArray(), []) ?? [];
@@ -221,8 +268,10 @@ function StaffManager() {
         toast.success("Staff account created");
       }
       setOpen(false);
+      return;
     } catch {
       toast.error("That email address is already in use.");
+      return;
     }
   }
 

@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartNoAxesCombined, Coins, TrendingDown, TrendingUp } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { LoadingPanels, EmptyState } from "@/components/Modal";
 import { accentVar, useCategories, useItems } from "@/lib/ledger";
 import { money } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const CATEGORY_PAGE_SIZE = 5;
 
 export const Route = createFileRoute("/profit-loss")({
   head: () => ({ meta: [{ title: "Profit & loss — StockLine Inventory" }] }),
@@ -17,6 +20,7 @@ function ProfitLossPage() {
   const { isAdmin } = useAuth();
   const items = useItems();
   const categories = useCategories();
+  const [categoryPage, setCategoryPage] = useState(1);
 
   const report = useMemo(() => {
     const list = items ?? [];
@@ -53,6 +57,8 @@ function ProfitLossPage() {
   }
 
   const profit = report.revenue - report.original;
+  const pageCount = Math.max(1, Math.ceil(report.groups.length / CATEGORY_PAGE_SIZE));
+  const visibleGroups = report.groups.slice((categoryPage - 1) * CATEGORY_PAGE_SIZE, categoryPage * CATEGORY_PAGE_SIZE);
 
   return (
     <AppShell eyebrow="Finance" title="Profit & loss">
@@ -69,7 +75,7 @@ function ProfitLossPage() {
           <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No category data yet" body="Add items with original and sold prices to see profit and loss." />
         ) : (
           <div className="flex flex-col gap-4">
-            {report.groups.map((group) => (
+            {visibleGroups.map((group) => (
               <section key={group.category.id} className="glass overflow-hidden rounded-2xl">
                 <div className="flex flex-col gap-3 border-b border-hair p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                   <div className="flex items-center gap-3">
@@ -99,6 +105,15 @@ function ProfitLossPage() {
                 </div>
               </section>
             ))}
+            {pageCount > 1 && (
+              <div className="flex items-center justify-between border-t border-hair pt-3">
+                <p className="label-mono">Page {categoryPage} of {pageCount}</p>
+                <div className="flex gap-2">
+                  <button type="button" aria-label="Previous category page" disabled={categoryPage === 1} onClick={() => setCategoryPage((page) => Math.max(1, page - 1))} className="grid size-9 place-items-center rounded-lg border border-hair text-fog transition-colors hover:text-strong disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft className="size-4" /></button>
+                  <button type="button" aria-label="Next category page" disabled={categoryPage === pageCount} onClick={() => setCategoryPage((page) => Math.min(pageCount, page + 1))} className="grid size-9 place-items-center rounded-lg border border-hair text-fog transition-colors hover:text-strong disabled:cursor-not-allowed disabled:opacity-40"><ChevronRight className="size-4" /></button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <p className="text-xs text-fog/60">Revenue and profit use units sold and the prices saved on each item. Totals include every category.</p>

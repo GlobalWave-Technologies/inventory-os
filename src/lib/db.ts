@@ -163,6 +163,11 @@ async function assertPortalAccess(categoryId: string) {
 
 const categorySchema = z.object({ name: z.string().trim().min(1).max(80), accent: z.enum(["a", "b", "c", "amber", "rose"]), attributes: z.array(z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(80), type: z.enum(["text", "number", "date", "select"]), options: z.array(z.string()).optional(), required: z.boolean().optional() })).max(30) });
 const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), soldQuantity: z.number().finite().min(0).default(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), originalPrice: z.number().finite().min(0), sellingPrice: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
+const emailSchema = z.string().trim().toLowerCase().email().max(254);
+
+function normalizeEmail(email: string) {
+  return emailSchema.parse(email);
+}
 
 async function passwordDigest(password: string) {
   const bytes = new TextEncoder().encode(password);
@@ -203,7 +208,8 @@ export async function authenticate(email: string, password: string) {
 }
 
 export async function registerUser(input: { name: string; email: string; password: string }) {
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeEmail(input.email);
+  if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
   const existing = await db().users.where("email").equals(email).first();
   if (existing) throw new Error("An account with this email already exists.");
 
@@ -221,9 +227,20 @@ export async function registerUser(input: { name: string; email: string; passwor
 }
 
 export async function resetPassword(email: string, password: string) {
-  const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
+  if (password.length < 8) return false;
+  const user = await db().users.where("email").equals(normalizeEmail(email)).first();
   if (!user) return false;
   await db().users.update(user.id, { passwordHash: await passwordDigest(password), password: undefined });
+  return true;
+}
+
+export async function changePassword(userId: string, currentPassword: string, nextPassword: string) {
+  const user = await db().users.get(userId);
+  if (!user || nextPassword.length < 8) return false;
+  const currentHash = await passwordDigest(currentPassword);
+  const matches = user.passwordHash ? user.passwordHash === currentHash : user.password === currentPassword;
+  if (!matches) return false;
+  await db().users.update(userId, { passwordHash: await passwordDigest(nextPassword), password: undefined });
   return true;
 }
 
@@ -236,10 +253,11 @@ export async function listUsers() {
 }
 
 export async function createStaff(input: { name: string; email: string; password: string; categoryIds: string[] }) {
+  if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
   const user: User = {
     id: uid(),
     name: input.name.trim(),
-    email: input.email.trim().toLowerCase(),
+    email: normalizeEmail(input.email),
     passwordHash: await passwordDigest(input.password),
     role: "staff",
     categoryIds: input.categoryIds,
@@ -251,9 +269,11 @@ export async function createStaff(input: { name: string; email: string; password
 
 export async function updateStaff(id: string, patch: Partial<{ name: string; email: string; password: string; categoryIds: string[] }>) {
   const { password, ...safePatch } = patch;
+  if (password && password.length < 8) throw new Error("Password must be at least 8 characters.");
+  const email = safePatch.email ? normalizeEmail(safePatch.email) : undefined;
   await db().users.update(id, {
     ...safePatch,
-    ...(safePatch.email ? { email: safePatch.email.trim().toLowerCase() } : {}),
+    ...(email ? { email } : {}),
     ...(password ? { passwordHash: await passwordDigest(password), password: undefined } : {}),
   });
 }
