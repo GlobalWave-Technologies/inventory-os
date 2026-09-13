@@ -95,7 +95,7 @@ export function LoginScreen() {
             <span className="h-px w-8 bg-aurora-a" />
             <p className="label-mono text-white/70">Inventory control, clearly visible</p>
           </div>
-          <h2 className="max-w-xl font-display text-6xl leading-[0.9] tracking-tight">Know what moves.<br /><span className="text-aurora-a">Move with confidence.</span></h2>
+          <h2 className="max-w-xl font-display text-6xl leading-[0.9] tracking-tight">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h2>
           <p className="mt-6 max-w-md text-sm leading-6 text-white/70">StockLine gives your team a calm, reliable view of what is moving through the operation.</p>
           <div className="mt-8 flex gap-3">
             <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80">Live stock view</span>
@@ -106,7 +106,7 @@ export function LoginScreen() {
           <section className="w-full max-w-lg self-center text-center lg:justify-self-end lg:text-left">
             <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/10 text-aurora-a shadow-2xl backdrop-blur-sm lg:mx-0"><Warehouse className="size-7" /></div>
             <p className="label-mono mt-6 text-white/65">One clear view of your operation</p>
-            <h1 className="mt-3 font-display text-5xl leading-[0.92] text-white sm:text-6xl">Know what moves.<br /><span className="text-aurora-a">Move with confidence.</span></h1>
+            <h1 className="mt-3 font-display text-5xl leading-[0.92] text-white sm:text-6xl">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h1>
             <p className="mt-5 max-w-md text-sm leading-6 text-white/70">Track stock, movement, categories, and value from one clear, reliable workspace.</p>
             <p className="mt-8 max-w-sm text-sm leading-6 text-white/65">Choose Staff or Admin above to enter your workspace securely.</p>
           </section>
