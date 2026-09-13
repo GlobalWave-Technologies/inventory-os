@@ -1,6 +1,6 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { ArrowLeft, Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined } from "lucide-react";
+import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
@@ -58,7 +58,6 @@ export function AppShell({
   children: ReactNode;
 }) {
   useBootstrap();
-  const router = useRouter();
   const { user, isAdmin, logout, portalId } = useAuth();
 
   if (user === undefined) return null;
@@ -113,23 +112,7 @@ export function AppShell({
         <main className="ml-0 w-full min-w-0 flex-1 lg:ml-8">
           <header className="mb-5 grid grid-cols-1 items-center gap-4 sm:flex sm:flex-wrap sm:justify-between sm:gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.history.length > 1) {
-                      router.history.back();
-                    } else {
-                      router.navigate({ to: "/" });
-                    }
-                  }}
-                  aria-label="Go back"
-                  className="grid size-8 shrink-0 place-items-center rounded-lg border border-hair bg-panel/60 text-fog transition-colors hover:text-strong"
-                >
-                  <ArrowLeft className="size-4" />
-                </button>
-                <p className="label-mono">{eyebrow}</p>
-              </div>
+              <p className="label-mono">{eyebrow}</p>
               <h1 className="truncate font-display text-xl font-semibold text-strong sm:text-2xl">
                 {title}
               </h1>
