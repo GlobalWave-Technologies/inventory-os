@@ -99,14 +99,7 @@ export function AppShell({
           </nav>
 
           <div className="mt-auto rounded-2xl border border-hair bg-panel/60 p-3">
-            <p className="truncate px-1 text-sm font-medium text-strong">{user.name}</p>
-            <p className="label-mono mt-0.5 px-1">{isAdmin ? "Administrator" : "Staff account"}</p>
-            <p className="label-mono px-1">Storage</p>
-            <p className="mt-2 px-1 text-xs leading-relaxed text-fog/80">
-              Everything is saved in this browser only. Export a backup regularly.
-            </p>
-            {isAdmin && <Link to="/settings" className="mt-3 block rounded-lg border border-amber/30 px-3 py-1.5 text-center text-xs font-medium text-amber">Manage workspace</Link>}
-            <button onClick={logout} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-hair px-3 py-1.5 text-xs text-fog hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
+            <button onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-hair px-3 py-2 text-xs text-fog hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
           </div>
         </aside>
 
