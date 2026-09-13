@@ -27,8 +27,8 @@ export function LoginScreen() {
         return;
       }
 
-      if (password.length < 6) {
-        toast.error("Use a password with at least 6 characters.");
+      if (password.length < 8) {
+        toast.error("Use a password with at least 8 characters.");
         return;
       }
       if (password !== confirmPassword) {
@@ -129,10 +129,10 @@ export function LoginScreen() {
           {isSignup && <label className="block text-xs font-medium text-fog">Name<div className="relative mt-2"><UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required autoComplete="name" className="field pl-10" value={name} onChange={(e) => setName(e.target.value)} /></div></label>}
           <label className="block text-xs font-medium text-white/85">Email<div className="relative mt-2"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field bg-white/90 text-slate-900" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
           {isLogin && <label className="block text-xs font-medium text-white/85">Password<input required type="password" autoComplete="current-password" className="field mt-2 bg-white/90 text-slate-900" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
-          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Password changes are stored only in this browser.</p></>}
+          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={8} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={8} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Password changes are stored only in this browser.</p></>}
         </div>
         <button disabled={saving} className="group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-all hover:brightness-105 disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}{isLogin && <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}</button>
-        {isLogin && entry === "staff" && <p className="mt-3 text-center text-xs text-fog/65">Need access? Ask an administrator to create your account and assign your categories.</p>}
+        {isLogin && entry === "staff" && <div className="mt-3 text-center text-xs text-fog/65"><p>Already have access? Sign in above.</p><button type="button" onClick={() => setMode("signup")} className="mt-1 text-aurora-a underline-offset-2 hover:underline">Create a staff account</button></div>}
         {isLogin && entry === "admin" && <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber/20 bg-amber/8 px-2.5 py-2 text-xs leading-4 text-fog/70"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber" /><span>Demo admin access: <strong className="text-strong">admin@veridian.local</strong> / <strong className="text-strong">admin123</strong></span></div>}
         </form>}
         </div>
