@@ -79,14 +79,14 @@ export function LoginScreen() {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,20,22,0.58),rgba(5,20,22,0.35)_45%,rgba(5,20,22,0.12))]" aria-hidden="true" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(77,208,170,0.1),transparent_28%),radial-gradient(circle_at_85%_85%,rgba(235,157,101,0.08),transparent_26%)]" aria-hidden="true" />
       <div className="relative min-h-screen px-4 py-5 sm:px-6 lg:px-12">
-        <header className="mx-auto flex max-w-7xl items-center justify-between border-b border-white/15 pb-4">
-          <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex items-center gap-3 text-left">
-            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background"><LockKeyhole className="size-4" /></span>
-            <span><span className="block font-display text-2xl leading-none text-white">StockLine</span><span className="label-mono mt-1 block text-white/60">Inventory workspace</span></span>
+        <header className="mx-auto flex max-w-7xl items-center justify-between gap-2 border-b border-white/15 pb-4">
+          <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex min-w-0 items-center gap-2 text-left sm:gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background sm:size-10"><LockKeyhole className="size-4" /></span>
+            <span className="min-w-0"><span className="block truncate font-display text-[25px] leading-none text-white sm:text-2xl">StockLine</span><span className="label-mono mt-1 hidden text-white/70 sm:block">Inventory workspace</span></span>
           </button>
-          <nav className="flex items-center gap-2 sm:gap-3">
-            <button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:px-4 ${entry === "staff" ? "bg-aurora-a text-background" : "text-aurora-a hover:bg-aurora-a/10"}`}>Staff login</button>
-            <button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors sm:px-4 ${entry === "admin" ? "border-aurora-a bg-aurora-a/15 text-aurora-a" : "border-white/15 text-aurora-a hover:border-aurora-a/60 hover:bg-aurora-a/10"}`}>Admin login</button>
+          <nav className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors sm:rounded-xl sm:px-4 sm:text-xs ${entry === "staff" ? "border-aurora-a bg-aurora-a text-background" : "border-white/40 bg-[#071d1b]/80 text-white shadow-sm backdrop-blur hover:border-aurora-a hover:bg-[#071d1b]"}`}>Staff</button>
+            <button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors sm:rounded-xl sm:px-4 sm:text-xs ${entry === "admin" ? "border-aurora-a bg-aurora-a text-background" : "border-white/40 bg-[#071d1b]/80 text-white shadow-sm backdrop-blur hover:border-aurora-a hover:bg-[#071d1b]"}`}>Admin</button>
           </nav>
         </header>
         <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl place-items-center lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:gap-12">
@@ -110,22 +110,22 @@ export function LoginScreen() {
             <p className="mt-5 max-w-md text-sm leading-6 text-white/70">Track stock, movement, categories, and value from one clear, reliable workspace.</p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"><button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className="group flex items-center gap-2 rounded-xl bg-aurora-a px-4 py-3 text-sm font-semibold text-background shadow-lg shadow-aurora-a/20">Enter as staff <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></button><button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white backdrop-blur-sm">Admin workspace</button></div>
           </section>
-        ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/10 bg-[#071d1b]/90 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-5 lg:justify-self-end">
+        ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/35 bg-[#071d1b]/95 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-5 lg:justify-self-end">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-aurora-a via-aurora-b to-aurora-c text-background shadow-lg shadow-aurora-a/20"><LockKeyhole className="size-4" /></span>
-            <div><p className="font-display text-[22px] font-semibold leading-none text-strong">StockLine</p><p className="label-mono mt-1">Inventory workspace</p></div>
+            <div><p className="font-display text-[22px] font-semibold leading-none text-white">StockLine</p><p className="label-mono mt-1 text-white/65">Inventory workspace</p></div>
           </div>
           <span className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-aurora-a sm:flex"><span className="size-1.5 rounded-full bg-aurora-a" /> Secure</span>
         </div>
         <div className="flex items-start gap-3">
           {mode !== "login" && <button type="button" aria-label="Back to sign in" onClick={() => setMode("login")} className="mt-1 grid size-7 place-items-center rounded-lg text-fog/70 transition-colors hover:bg-white/5 hover:text-strong"><ArrowLeft className="size-4" /></button>}
-          <div><p className="label-mono mb-2 text-aurora-a">{roleLabel}</p><h1 className="font-display text-2xl font-semibold leading-none text-strong">{title}</h1><p className="mt-2 max-w-sm text-[13px] leading-5 text-fog/70">{description}</p></div>
+          <div><p className="label-mono mb-2 text-aurora-a">{roleLabel}</p><h1 className="font-display text-2xl font-semibold leading-none text-white">{title}</h1><p className="mt-2 max-w-sm text-[13px] leading-5 text-white/75">{description}</p></div>
         </div>
         <div className="mt-4 space-y-2.5">
           {isSignup && <label className="block text-xs font-medium text-fog">Name<div className="relative mt-2"><UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required autoComplete="name" className="field pl-10" value={name} onChange={(e) => setName(e.target.value)} /></div></label>}
-          <label className="block text-xs font-medium text-fog">Email<div className="relative mt-2"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field pl-10" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
-          {isLogin && <label className="block text-xs font-medium text-fog">Password<input required type="password" autoComplete="current-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
+          <label className="block text-xs font-medium text-white/85">Email<div className="relative mt-2"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field bg-white/90 text-slate-900" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
+          {isLogin && <label className="block text-xs font-medium text-white/85">Password<input required type="password" autoComplete="current-password" className="field mt-2 bg-white/90 text-slate-900" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
           {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={6} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Password changes are stored only in this browser.</p></>}
         </div>
         <button disabled={saving} className="group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-all hover:brightness-105 disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}{isLogin && <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}</button>
