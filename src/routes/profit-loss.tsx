@@ -21,14 +21,14 @@ function ProfitLossPage() {
     const list = items ?? [];
     const groups = (categories ?? []).map((category) => {
       const categoryItems = list.filter((item) => item.categoryId === category.id);
-      const original = categoryItems.reduce((sum, item) => sum + item.quantity * item.originalPrice, 0);
-      const sold = categoryItems.reduce((sum, item) => sum + item.quantity * item.sellingPrice, 0);
-      return { category, items: categoryItems, original, sold, profit: sold - original };
+      const original = categoryItems.reduce((sum, item) => sum + item.soldQuantity * item.originalPrice, 0);
+      const revenue = categoryItems.reduce((sum, item) => sum + item.soldQuantity * item.sellingPrice, 0);
+      return { category, items: categoryItems, original, revenue, profit: revenue - original };
     });
     return {
       groups,
       original: groups.reduce((sum, group) => sum + group.original, 0),
-      sold: groups.reduce((sum, group) => sum + group.sold, 0),
+      revenue: groups.reduce((sum, group) => sum + group.revenue, 0),
     };
   }, [items, categories]);
 
@@ -46,14 +46,14 @@ function ProfitLossPage() {
     return <AppShell eyebrow="Finance" title="Profit & loss"><LoadingPanels count={3} /></AppShell>;
   }
 
-  const profit = report.sold - report.original;
+  const profit = report.revenue - report.original;
 
   return (
     <AppShell eyebrow="Finance" title="Profit & loss">
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Summary label="Original cost" value={report.original} icon={<Coins className="size-4" />} />
-          <Summary label="Sold value" value={report.sold} icon={<ChartNoAxesCombined className="size-4" />} />
+          <Summary label="Total revenue" value={report.revenue} icon={<ChartNoAxesCombined className="size-4" />} />
           <Summary label="Projected profit" value={profit} icon={profit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={profit >= 0 ? "text-aurora-a" : "text-rose"} />
         </div>
 
@@ -72,18 +72,19 @@ function ProfitLossPage() {
                     </div>
                   </div>
                   <p className={`num text-lg font-semibold ${group.profit >= 0 ? "text-aurora-a" : "text-rose"}`}>
-                    {money(group.profit)} profit
+                    {money(group.profit)} profit · {money(group.revenue)} revenue
                   </p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[680px] text-left text-sm">
                     <thead className="border-b border-hair text-xs text-fog/60">
-                      <tr><th className="px-4 py-3 font-medium sm:px-5">Item</th><th className="px-4 py-3 font-medium">Qty</th><th className="px-4 py-3 font-medium">Original price</th><th className="px-4 py-3 font-medium">Sold price</th><th className="px-4 py-3 font-medium sm:px-5">Profit</th></tr>
+                      <tr><th className="px-4 py-3 font-medium sm:px-5">Item</th><th className="px-4 py-3 font-medium">Sold</th><th className="px-4 py-3 font-medium">Original price</th><th className="px-4 py-3 font-medium">Sold price</th><th className="px-4 py-3 font-medium">Revenue</th><th className="px-4 py-3 font-medium sm:px-5">Profit</th></tr>
                     </thead>
                     <tbody className="divide-y divide-hair/70">
                       {group.items.map((item) => {
-                        const itemProfit = item.quantity * (item.sellingPrice - item.originalPrice);
-                        return <tr key={item.id}><td className="px-4 py-3 text-strong sm:px-5">{item.name}</td><td className="num px-4 py-3">{item.quantity}</td><td className="num px-4 py-3">{money(item.originalPrice)}</td><td className="num px-4 py-3">{money(item.sellingPrice)}</td><td className={`num px-4 py-3 sm:px-5 ${itemProfit >= 0 ? "text-aurora-a" : "text-rose"}`}>{money(itemProfit)}</td></tr>;
+                        const itemRevenue = item.soldQuantity * item.sellingPrice;
+                        const itemProfit = item.soldQuantity * (item.sellingPrice - item.originalPrice);
+                        return <tr key={item.id}><td className="px-4 py-3 text-strong sm:px-5">{item.name}</td><td className="num px-4 py-3">{item.soldQuantity}</td><td className="num px-4 py-3">{money(item.originalPrice)}</td><td className="num px-4 py-3">{money(item.sellingPrice)}</td><td className="num px-4 py-3">{money(itemRevenue)}</td><td className={`num px-4 py-3 sm:px-5 ${itemProfit >= 0 ? "text-aurora-a" : "text-rose"}`}>{money(itemProfit)}</td></tr>;
                       })}
                     </tbody>
                   </table>
@@ -92,7 +93,7 @@ function ProfitLossPage() {
             ))}
           </div>
         )}
-        <p className="text-xs text-fog/60">Profit is projected from current stock quantities and the prices saved on each item.</p>
+        <p className="text-xs text-fog/60">Revenue and profit use units sold and the prices saved on each item. Totals include every category.</p>
       </div>
     </AppShell>
   );

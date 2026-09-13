@@ -41,6 +41,7 @@ export interface Item {
   categoryId: string;
   name: string;
   quantity: number;
+  soldQuantity: number;
   lowStockThreshold: number;
   location: string;
   originalPrice: number;
@@ -115,6 +116,16 @@ class LedgerDB extends Dexie {
         delete item.unitValue;
       }),
     );
+    this.version(5).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+    }).upgrade((tx) =>
+      tx.table("items").toCollection().modify((item: Item) => {
+        item.soldQuantity ??= 0;
+      }),
+    );
   }
 }
 
@@ -151,7 +162,7 @@ async function assertPortalAccess(categoryId: string) {
 }
 
 const categorySchema = z.object({ name: z.string().trim().min(1).max(80), accent: z.enum(["a", "b", "c", "amber", "rose"]), attributes: z.array(z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(80), type: z.enum(["text", "number", "date", "select"]), options: z.array(z.string()).optional(), required: z.boolean().optional() })).max(30) });
-const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), originalPrice: z.number().finite().min(0), sellingPrice: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
+const itemSchema = z.object({ categoryId: z.string().min(1), name: z.string().trim().min(1).max(160), quantity: z.number().finite().min(0), soldQuantity: z.number().finite().min(0).default(0), lowStockThreshold: z.number().finite().min(0), location: z.string().max(160), originalPrice: z.number().finite().min(0), sellingPrice: z.number().finite().min(0), status: z.enum(["in-stock", "reserved", "damaged", "archived"]), dateAdded: z.string().datetime(), notes: z.string().max(3000).optional(), custom: z.record(z.union([z.string().max(500), z.number().finite()])) });
 
 async function passwordDigest(password: string) {
   const bytes = new TextEncoder().encode(password);
@@ -590,7 +601,7 @@ export async function importSnapshot(snap: Snapshot, mode: "replace" | "merge") 
     const legacy = item as Item & { unitValue?: number };
     const originalPrice = legacy.originalPrice ?? legacy.unitValue ?? 0;
     const sellingPrice = legacy.sellingPrice ?? legacy.unitValue ?? originalPrice;
-    return { ...item, originalPrice, sellingPrice };
+    return { ...item, originalPrice, sellingPrice, soldQuantity: item.soldQuantity ?? 0 };
   });
   await d.transaction("rw", d.categories, d.items, d.activity, d.users, async () => {
     if (mode === "replace") {

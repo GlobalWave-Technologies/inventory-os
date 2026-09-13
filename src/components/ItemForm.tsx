@@ -10,6 +10,7 @@ type Draft = {
   categoryId: string;
   name: string;
   quantity: string;
+  soldQuantity: string;
   lowStockThreshold: string;
   location: string;
   originalPrice: string;
@@ -24,6 +25,7 @@ const emptyDraft = (categoryId: string): Draft => ({
   categoryId,
   name: "",
   quantity: "0",
+  soldQuantity: "0",
   lowStockThreshold: "5",
   location: "",
   originalPrice: "0",
@@ -56,6 +58,7 @@ export function ItemForm({
         categoryId: item.categoryId,
         name: item.name,
         quantity: String(item.quantity),
+        soldQuantity: String(item.soldQuantity),
         lowStockThreshold: String(item.lowStockThreshold),
         location: item.location,
         originalPrice: String(item.originalPrice),
@@ -95,6 +98,7 @@ export function ItemForm({
       categoryId: draft.categoryId,
       name: draft.name.trim(),
       quantity: Math.max(0, Number(draft.quantity) || 0),
+      soldQuantity: Math.max(0, Number(draft.soldQuantity) || 0),
       lowStockThreshold: Math.max(0, Number(draft.lowStockThreshold) || 0),
       location: draft.location.trim(),
       originalPrice: Math.max(0, Number(draft.originalPrice) || 0),
@@ -184,6 +188,17 @@ export function ItemForm({
             className="field num"
             value={draft.lowStockThreshold}
             onChange={(e) => set({ lowStockThreshold: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Units sold">
+          <input
+            type="number"
+            min={0}
+            step="1"
+            className="field num"
+            value={draft.soldQuantity}
+            onChange={(e) => set({ soldQuantity: e.target.value })}
           />
         </Field>
 
