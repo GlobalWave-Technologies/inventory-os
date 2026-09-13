@@ -111,7 +111,10 @@ export function LoginScreen() {
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"><button type="button" onClick={() => { setEntry("staff"); setMode("login"); }} className="group flex items-center gap-2 rounded-xl bg-aurora-a px-4 py-3 text-sm font-semibold text-background shadow-lg shadow-aurora-a/20">Enter as staff <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></button><button type="button" onClick={() => { setEntry("admin"); setMode("login"); }} className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white backdrop-blur-sm">Admin workspace</button></div>
           </section>
         ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/35 bg-[#071d1b]/95 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-5 lg:justify-self-end">
-        <div className="mb-4 flex items-center justify-between">
+        <button type="button" aria-label="Back to login options" onClick={() => { setEntry(null); setMode("login"); }} className="absolute left-4 top-4 grid size-9 place-items-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition-colors hover:border-aurora-a hover:bg-aurora-a/15 hover:text-white">
+          <img src="/back-arrow.svg" alt="" className="size-5" />
+        </button>
+        <div className="mb-4 flex items-center justify-between pl-12">
           <div className="flex items-center gap-3">
             <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-12 shrink-0 rounded-lg bg-white object-contain" />
             <div><p className="font-display text-[22px] font-semibold leading-none text-white">StockLine</p><p className="label-mono mt-1 text-white/65">Inventory workspace</p></div>
