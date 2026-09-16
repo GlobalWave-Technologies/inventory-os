@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { authenticate, db, ensureDefaultAdmin, ensureDemoStaff, getUser, logPortalAccess, registerUser, resetPassword, type User } from "./db";
+import { authenticate, db, ensureDefaultAdmin, getUser, logPortalAccess, registerUser, removeDemoStaff, resetPassword, type User } from "./db";
 
 const SESSION_KEY = "veridian-session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [portalId, setPortalId] = useState<string | null>(null);
 
   useEffect(() => {
-    void ensureDefaultAdmin().then(() => ensureDemoStaff([])).finally(() => {
+    void ensureDefaultAdmin().then(removeDemoStaff).finally(() => {
       const sessionId = readSession();
       const session = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as StoredSession | null;
       setUserId(sessionId);
@@ -80,9 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: liveUser?.role === "admin",
       portalId,
       login: async (email, password, role) => {
-        const user = role === "staff" && email.trim() && password
-          ? await authenticate("staff@veridian.local", "staff123")
-          : await authenticate(email, password);
+        const user = await authenticate(email, password);
         if (!user || user.role !== role) return false;
         storeSession(user.id);
         setUserId(user.id);
