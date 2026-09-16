@@ -253,6 +253,22 @@ export async function ensureDefaultAdmin() {
   return admin;
 }
 
+export async function ensureDemoStaff(categoryIds: string[]) {
+  const existing = await db().users.where("email").equals("staff@veridian.local").first();
+  if (existing) return existing;
+  const staff: User = {
+    id: uid(),
+    name: "Demo Staff",
+    email: "staff@veridian.local",
+    passwordHash: await passwordDigest("staff123"),
+    role: "staff",
+    categoryIds,
+    createdAt: new Date().toISOString(),
+  };
+  await db().users.add(staff);
+  return staff;
+}
+
 export async function authenticate(email: string, password: string) {
   const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
   if (!user) return null;
@@ -585,6 +601,8 @@ export async function seedIfEmpty() {
   await ensureDefaultAdmin();
   const count = await db().categories.count();
   if (count > 0) {
+    const categories = await db().categories.toArray();
+    await ensureDemoStaff(categories.map((category) => category.id));
     return;
   }
 
@@ -615,6 +633,8 @@ export async function seedIfEmpty() {
       { id: uid(), name: "Weight (kg)", type: "number" },
     ],
   });
+
+  await ensureDemoStaff([doors.id, laptops.id, goats.id]);
 
   const seeds: Array<Omit<Item, "id" | "updatedAt">> = [
     {
