@@ -255,7 +255,13 @@ export async function ensureDefaultAdmin() {
 
 export async function ensureDemoStaff(categoryIds: string[]) {
   const existing = await db().users.where("email").equals("staff@veridian.local").first();
-  if (existing) return existing;
+  if (existing) {
+    if (existing.role === "staff" && categoryIds.length > 0 && existing.categoryIds.length === 0) {
+      await db().users.update(existing.id, { categoryIds });
+      return { ...existing, categoryIds };
+    }
+    return existing;
+  }
   const staff: User = {
     id: uid(),
     name: "Demo Staff",
