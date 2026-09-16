@@ -68,13 +68,13 @@ export function LoginScreen() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#102225] text-fog">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('/login-background.jpg'), url('https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=2200&q=85')",
-        }}
+      <img
+        src="https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1280&q=65&fm=webp"
+        alt=""
         aria-hidden="true"
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 size-full object-cover object-center"
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,20,22,0.58),rgba(5,20,22,0.35)_45%,rgba(5,20,22,0.12))]" aria-hidden="true" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(77,208,170,0.1),transparent_28%),radial-gradient(circle_at_85%_85%,rgba(235,157,101,0.08),transparent_26%)]" aria-hidden="true" />

@@ -133,14 +133,14 @@ export function AppShell({
       </div>
 
       {/* mobile tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 backdrop-blur-xl lg:hidden">
-        <div className={`mx-auto grid max-w-lg ${visibleNav.length === 7 ? "grid-cols-7" : visibleNav.length === 6 ? "grid-cols-6" : visibleNav.length === 5 ? "grid-cols-5" : visibleNav.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-lg overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {visibleNav.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: to === "/" }}
-              className="flex flex-col items-center gap-1 py-2.5 text-[10px] text-fog/70"
+              className="flex min-w-[4.5rem] shrink-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
               activeProps={{ className: "!text-aurora-a" }}
             >
               <Icon className="size-[18px]" />
