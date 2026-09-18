@@ -13,7 +13,7 @@ import {
 } from "./db";
 
 const SESSION_KEY = "stockline-session";
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 3 * 60 * 1000;
 
 type StoredSession = { userId: string; expiresAt: number; portalId?: string };
 
@@ -82,6 +82,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserId(null);
     }
   }, [ready, userId, liveUser]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const refreshSession = () => {
+      const next = { userId, expiresAt: Date.now() + SESSION_DURATION_MS, portalId: portalId ?? undefined };
+      document.cookie = `${SESSION_KEY}=${encodeURIComponent(JSON.stringify(next))}; path=/; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}; SameSite=Lax; Secure`;
+    };
+
+    const handleInactivity = () => {
+      const sessionId = readSession();
+      if (!sessionId) {
+        setUserId(null);
+        setPortalId(null);
+        return;
+      }
+      refreshSession();
+    };
+
+    refreshSession();
+
+    const timeoutId = window.setTimeout(() => {
+      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
+      setUserId(null);
+      setPortalId(null);
+    }, SESSION_DURATION_MS);
+
+    const events = ["pointerdown", "keydown", "touchstart", "scroll", "mousemove"] as const;
+    events.forEach((eventName) => window.addEventListener(eventName, handleInactivity, { passive: true }));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      events.forEach((eventName) => window.removeEventListener(eventName, handleInactivity));
+    };
+  }, [userId, portalId]);
 
   // Dexie live queries update this immediately after an admin changes assignments.
   // A revoked worker is returned to the portal picker before any more scoped views render.
