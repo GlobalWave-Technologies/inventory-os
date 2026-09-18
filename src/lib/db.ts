@@ -240,7 +240,6 @@ async function passwordDigest(password: string) {
 const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 6;
-const MFA_CODE_LENGTH = 6;
 
 function isStrongPassword(password: string) {
   return PASSWORD_POLICY.test(password);
@@ -277,13 +276,6 @@ function clearLoginFailures(email: string) {
   localStorage.removeItem(getLoginAttemptsKey(email));
 }
 
-function getMfaChallenge(email: string) {
-  const challengeId = `${email.toLowerCase()}-${Date.now()}`;
-  const code = `${Math.floor(100000 + Math.random() * 900000)}`;
-  sessionStorage.setItem(`stockline-mfa:${challengeId}`, code);
-  return { challengeId, code };
-}
-
 export async function ensureDefaultAdmin() {
   const existing = await db().users.where("email").equals("admin@veridian.local").first();
   if (existing) return existing;
@@ -305,7 +297,7 @@ export async function removeDemoStaff() {
   if (demo) await db().users.delete(demo.id);
 }
 
-export async function authenticate(email: string, password: string, role?: User["role"], otpCode?: string) {
+export async function authenticate(email: string, password: string, role?: User["role"]) {
   const normalizedEmail = normalizeEmail(email);
   const attempts = readLoginAttempts(normalizedEmail);
   if (attempts.count >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
@@ -330,19 +322,6 @@ export async function authenticate(email: string, password: string, role?: User[
   }
 
   clearLoginFailures(normalizedEmail);
-
-  if (user.role === "admin" || user.role === "staff") {
-    const mfaChallenge = getMfaChallenge(normalizedEmail);
-    const code = otpCode ?? "";
-    const validOtp = code.length === MFA_CODE_LENGTH && sessionStorage.getItem(`stockline-mfa:${mfaChallenge.challengeId}`) === code;
-    if (!otpCode) {
-      return { ...user, requiresMfa: true, challengeId: mfaChallenge.challengeId };
-    }
-    if (!validOtp) {
-      throw new Error("Invalid verification code.");
-    }
-    sessionStorage.removeItem(`stockline-mfa:${mfaChallenge.challengeId}`);
-  }
 
   if (!user.passwordHash) {
     const passwordHash = await passwordDigest(password);

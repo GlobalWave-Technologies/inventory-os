@@ -43,7 +43,7 @@ function storeSession(userId: string, portalId?: string) {
 
 type AuthValue = {
   user: User | null | undefined;
-  login: (email: string, password: string, role: User["role"], otpCode?: string) => Promise<{ ok: boolean; requiresMfa?: boolean; challengeId?: string }>; 
+  login: (email: string, password: string, role: User["role"]) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   forgotPassword: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -98,18 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: ready ? (userId ? liveUser : null) : undefined,
       isAdmin: liveUser?.role === "admin",
       portalId,
-      login: async (email, password, role, otpCode) => {
-        const result = await authenticate(email, password, role, otpCode);
-        if (!result) return { ok: false };
-        if ("requiresMfa" in result && result.requiresMfa) {
-          return { ok: false, requiresMfa: true, challengeId: result.challengeId };
-        }
-        const user = result as User;
-        if (user.role !== role) return { ok: false };
+      login: async (email, password, role) => {
+        const user = await authenticate(email, password, role);
+        if (!user || user.role !== role) return false;
         storeSession(user.id);
         setUserId(user.id);
         setPortalId(null);
-        return { ok: true };
+        return true;
       },
       signup: async (name, email, password) => {
         try {
