@@ -108,10 +108,10 @@ export function LoginScreen() {
         {isLanding ? (
           <section className="w-full max-w-lg self-center text-center lg:justify-self-end lg:text-left">
             <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/10 text-aurora-a shadow-2xl backdrop-blur-sm lg:mx-0"><Warehouse className="size-7" /></div>
-            <p className="label-mono mt-6 text-white/65">One clear view of your operation</p>
-            <h1 className="mt-3 font-display text-5xl font-semibold leading-[0.92] text-white sm:text-6xl">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h1>
-            <p className="mt-5 max-w-md text-sm leading-6 text-white/70">Track, manage, and grow with ease from one clear, reliable workspace.</p>
-            <p className="mt-8 max-w-sm text-sm leading-6 text-white/65">Choose Staff or Admin above to enter your workspace securely.</p>
+            <p className="label-mono mt-6 text-base text-white/65">One clear view of your operation</p>
+            <h1 className="mt-3 font-display text-5xl font-semibold leading-[0.92] text-white sm:text-6xl lg:text-[4.3rem]">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h1>
+            <p className="mt-5 max-w-lg text-base leading-7 text-white/80 sm:text-lg">Track, manage, and grow with ease from one clear, reliable workspace.</p>
+            <p className="mt-8 max-w-md text-base leading-7 text-white/70 sm:text-lg">Choose Staff or Admin above to enter your workspace securely.</p>
           </section>
         ) : <form onSubmit={submit} className="glass relative w-full max-w-[360px] self-center overflow-hidden rounded-[22px] border-white/35 bg-[#071d1b]/95 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-5 lg:justify-self-end">
         <button type="button" aria-label="Back to login options" onClick={() => { setEntry(null); setMode("login"); }} className="absolute left-4 top-4 grid size-9 place-items-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition-colors hover:border-aurora-a hover:bg-aurora-a/15 hover:text-white">

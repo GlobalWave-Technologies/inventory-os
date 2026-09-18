@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Minus, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell, GhostButton, PrimaryButton } from "@/components/AppShell";
@@ -47,6 +47,7 @@ function ItemsPage() {
   const [editing, setEditing] = useState<Item | null>(null);
   const [detail, setDetail] = useState<Item | null>(null);
   const [adjusting, setAdjusting] = useState<Item | null>(null);
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -65,6 +66,9 @@ function ItemsPage() {
   }, [items, category, status, lowOnly, query]);
 
   const live = detail ? ((items ?? []).find((i) => i.id === detail.id) ?? detail) : null;
+  const pageSize = 12;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const visibleItems = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   async function remove(item: Item) {
     if (!confirm(`Delete “${item.name}”?`)) return;
@@ -162,7 +166,7 @@ function ItemsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
-            {filtered.map((item, i) => {
+            {visibleItems.map((item, i) => {
               const cat = categories.find((c) => c.id === item.categoryId);
               return (
                 <motion.button
@@ -207,6 +211,7 @@ function ItemsPage() {
               );
             })}
           </AnimatePresence>
+          {pageCount > 1 && <div className="col-span-full flex items-center justify-between border-t border-hair pt-3"><span className="label-mono">Page {page} of {pageCount}</span><span className="flex gap-2"><button type="button" aria-label="Previous items page" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Next items page" disabled={page === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronRight className="size-4" /></button></span></div>}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { History } from "lucide-react";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { useAccessibleActivity } from "@/lib/ledger";
@@ -31,6 +32,10 @@ export function toneFor(kind: string) {
 
 function ActivityPage() {
   const activity = useAccessibleActivity(300);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const pageCount = Math.max(1, Math.ceil((activity?.length ?? 0) / pageSize));
+  const visible = activity?.slice((page - 1) * pageSize, page * pageSize) ?? [];
 
   return (
     <AppShell eyebrow="History" title="Movement log">
@@ -44,7 +49,7 @@ function ActivityPage() {
         />
       ) : (
         <ol className="glass flex flex-col rounded-2xl p-2 sm:p-3">
-          {activity.map((a, i) => (
+          {visible.map((a, i) => (
             <motion.li
               key={a.id}
               initial={{ opacity: 0, y: 8 }}
@@ -75,8 +80,13 @@ function ActivityPage() {
               )}
             </motion.li>
           ))}
+          {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
         </ol>
       )}
     </AppShell>
   );
+}
+
+function Pagination({ page, pageCount, onPageChange }: { page: number; pageCount: number; onPageChange: (page: number) => void }) {
+  return <li className="flex items-center justify-between border-t border-hair px-3 py-3"><span className="label-mono">Page {page} of {pageCount}</span><span className="flex gap-2"><button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => onPageChange(Math.max(1, page - 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Next page" disabled={page === pageCount} onClick={() => onPageChange(Math.min(pageCount, page + 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronRight className="size-4" /></button></span></li>;
 }

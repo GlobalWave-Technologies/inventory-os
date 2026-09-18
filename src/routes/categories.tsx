@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Boxes, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
@@ -39,6 +39,10 @@ function CategoriesPage() {
   const users = useLiveQuery(() => db().users.toArray(), []) ?? [];
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 9;
+  const pageCount = Math.max(1, Math.ceil((categories?.length ?? 0) / pageSize));
+  const visibleCategories = categories?.slice((page - 1) * pageSize, page * pageSize) ?? [];
 
   async function remove(c: Category) {
     const count = (items ?? []).filter((i) => i.categoryId === c.id).length;
@@ -85,7 +89,7 @@ function CategoriesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
-            {categories.map((c, i) => {
+            {visibleCategories.map((c, i) => {
               const mine = items.filter((it) => it.categoryId === c.id);
               const value = mine.reduce((s, it) => s + it.quantity * it.originalPrice, 0);
               const staffIds = new Set(activity.filter((entry) => entry.categoryId === c.id && entry.userId).map((entry) => entry.userId));
@@ -174,6 +178,7 @@ function CategoriesPage() {
               );
             })}
           </AnimatePresence>
+          {pageCount > 1 && <div className="col-span-full flex items-center justify-between border-t border-hair pt-3"><span className="label-mono">Page {page} of {pageCount}</span><span className="flex gap-2"><button type="button" aria-label="Previous categories page" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Next categories page" disabled={page === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="grid size-8 place-items-center rounded-lg border border-hair text-fog disabled:opacity-40"><ChevronRight className="size-4" /></button></span></div>}
         </div>
       )}
 
