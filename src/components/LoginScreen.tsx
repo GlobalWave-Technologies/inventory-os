@@ -15,6 +15,7 @@ export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function submit(event: FormEvent) {
@@ -22,13 +23,20 @@ export function LoginScreen() {
     setSaving(true);
     try {
       if (mode === "login") {
-        const ok = await login(email, password, entry ?? "staff");
-        if (!ok) toast.error(`Incorrect ${entry === "admin" ? "admin" : "staff"} email or password.`);
+        const result = await login(email, password, entry ?? "staff", otpCode);
+        if (!result.ok) {
+          if (result.requiresMfa) {
+            toast.info("Enter the 6-digit verification code sent to your authenticator.");
+            return;
+          }
+          toast.error(`Incorrect ${entry === "admin" ? "admin" : "staff"} email or password.`);
+          return;
+        }
         return;
       }
 
-      if (password.length < 8) {
-        toast.error("Use a password with at least 8 characters.");
+      if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        toast.error("Use a stronger password: 12+ chars with upper/lowercase, a number, and a symbol.");
         return;
       }
       if (password !== confirmPassword) {
@@ -129,7 +137,23 @@ export function LoginScreen() {
           {isSignup && <label className="block text-xs font-medium text-fog">Name<div className="relative mt-2"><UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required autoComplete="name" className="field pl-10" value={name} onChange={(e) => setName(e.target.value)} /></div></label>}
           <label className="block text-xs font-medium text-white/85">Email<div className="relative mt-2"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field bg-white/90 text-slate-900" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
           {isLogin && <label className="block text-xs font-medium text-white/85">Password<input required type="password" autoComplete="current-password" className="field mt-2 bg-white/90 text-slate-900" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
-          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={8} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={8} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Password changes are stored only in this browser.</p></>}
+          {isLogin && (
+            <label className="block text-xs font-medium text-white/85">
+              Verification code
+              <input
+                required
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                autoComplete="one-time-code"
+                className="field mt-2 bg-white/90 text-slate-900"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="123456"
+              />
+            </label>
+          )}
+          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Use 12+ chars with upper/lowercase, a number, and a symbol.</p></>}
         </div>
         <button disabled={saving} className="group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-all hover:brightness-105 disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}{isLogin && <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}</button>
         {isLogin && entry === "staff" && <div className="mt-3 text-center text-xs text-fog/65"><p>Already have access? Sign in above.</p><button type="button" onClick={() => setMode("signup")} className="mt-1 text-aurora-a underline-offset-2 hover:underline">Create a staff account</button></div>}

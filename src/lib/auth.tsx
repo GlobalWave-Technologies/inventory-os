@@ -1,33 +1,49 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { authenticate, db, ensureDefaultAdmin, getUser, logPortalAccess, registerUser, removeDemoStaff, resetPassword, type User } from "./db";
+import {
+  authenticate,
+  db,
+  ensureDefaultAdmin,
+  getUser,
+  logPortalAccess,
+  registerUser,
+  removeDemoStaff,
+  resetPassword,
+  type User,
+} from "./db";
 
-const SESSION_KEY = "veridian-session";
+const SESSION_KEY = "stockline-session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 type StoredSession = { userId: string; expiresAt: number; portalId?: string };
 
 function readSession(): string | null {
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as StoredSession | null;
+    const cookie = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${SESSION_KEY}=`));
+    if (!cookie) return null;
+    const raw = decodeURIComponent(cookie.slice(SESSION_KEY.length + 1));
+    const session = JSON.parse(raw) as StoredSession | null;
     if (!session || session.expiresAt <= Date.now()) {
-      localStorage.removeItem(SESSION_KEY);
+      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
       return null;
     }
     return session.userId;
   } catch {
-    localStorage.removeItem(SESSION_KEY);
+    document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
     return null;
   }
 }
 
 function storeSession(userId: string, portalId?: string) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ userId, expiresAt: Date.now() + SESSION_DURATION_MS, portalId }));
+  const session: StoredSession = { userId, expiresAt: Date.now() + SESSION_DURATION_MS, portalId };
+  document.cookie = `${SESSION_KEY}=${encodeURIComponent(JSON.stringify(session))}; path=/; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}; SameSite=Lax; Secure`;
 }
 
 type AuthValue = {
   user: User | null | undefined;
-  login: (email: string, password: string, role: User["role"]) => Promise<boolean>;
+  login: (email: string, password: string, role: User["role"], otpCode?: string) => Promise<{ ok: boolean; requiresMfa?: boolean; challengeId?: string }>; 
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   forgotPassword: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -47,7 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void ensureDefaultAdmin().then(removeDemoStaff).finally(() => {
       const sessionId = readSession();
-      const session = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as StoredSession | null;
+      const cookie = document.cookie
+        .split("; ")
+        .find((entry) => entry.startsWith(`${SESSION_KEY}=`));
+      const session = cookie ? JSON.parse(decodeURIComponent(cookie.slice(SESSION_KEY.length + 1))) as StoredSession | null : null;
       setUserId(sessionId);
       setPortalId(session?.portalId ?? null);
       setReady(true);
@@ -59,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready && userId && liveUser === undefined) return;
     if (ready && userId && !liveUser) {
-      localStorage.removeItem(SESSION_KEY);
+      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
       setUserId(null);
     }
   }, [ready, userId, liveUser]);
@@ -79,13 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: ready ? (userId ? liveUser : null) : undefined,
       isAdmin: liveUser?.role === "admin",
       portalId,
-      login: async (email, password, role) => {
-        const user = await authenticate(email, password);
-        if (!user || user.role !== role) return false;
+      login: async (email, password, role, otpCode) => {
+        const result = await authenticate(email, password, role, otpCode);
+        if (!result) return { ok: false };
+        if ("requiresMfa" in result && result.requiresMfa) {
+          return { ok: false, requiresMfa: true, challengeId: result.challengeId };
+        }
+        const user = result as User;
+        if (user.role !== role) return { ok: false };
         storeSession(user.id);
         setUserId(user.id);
         setPortalId(null);
-        return true;
+        return { ok: true };
       },
       signup: async (name, email, password) => {
         try {
@@ -99,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       forgotPassword: (email, password) => resetPassword(email, password),
       logout: () => {
-        localStorage.removeItem(SESSION_KEY);
+        document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
         setUserId(null);
         setPortalId(null);
       },

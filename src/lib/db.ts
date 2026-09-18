@@ -237,6 +237,53 @@ async function passwordDigest(password: string) {
 
 /* ---------------- users & access ---------------- */
 
+const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 6;
+const MFA_CODE_LENGTH = 6;
+
+function isStrongPassword(password: string) {
+  return PASSWORD_POLICY.test(password);
+}
+
+function getLoginAttemptsKey(email: string) {
+  return `stockline-login-attempts:${email.trim().toLowerCase()}`;
+}
+
+function readLoginAttempts(email: string) {
+  try {
+    const raw = localStorage.getItem(getLoginAttemptsKey(email));
+    if (!raw) return { count: 0, windowStart: Date.now() };
+    const parsed = JSON.parse(raw) as { count: number; windowStart: number };
+    if (parsed.windowStart + LOGIN_RATE_LIMIT_WINDOW_MS < Date.now()) {
+      localStorage.removeItem(getLoginAttemptsKey(email));
+      return { count: 0, windowStart: Date.now() };
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem(getLoginAttemptsKey(email));
+    return { count: 0, windowStart: Date.now() };
+  }
+}
+
+function recordLoginFailure(email: string) {
+  const attempts = readLoginAttempts(email);
+  const next = { count: attempts.count + 1, windowStart: attempts.windowStart };
+  localStorage.setItem(getLoginAttemptsKey(email), JSON.stringify(next));
+  return next.count;
+}
+
+function clearLoginFailures(email: string) {
+  localStorage.removeItem(getLoginAttemptsKey(email));
+}
+
+function getMfaChallenge(email: string) {
+  const challengeId = `${email.toLowerCase()}-${Date.now()}`;
+  const code = `${Math.floor(100000 + Math.random() * 900000)}`;
+  sessionStorage.setItem(`stockline-mfa:${challengeId}`, code);
+  return { challengeId, code };
+}
+
 export async function ensureDefaultAdmin() {
   const existing = await db().users.where("email").equals("admin@veridian.local").first();
   if (existing) return existing;
@@ -244,7 +291,7 @@ export async function ensureDefaultAdmin() {
     id: uid(),
     name: "Administrator",
     email: "admin@veridian.local",
-    passwordHash: await passwordDigest("admin123"),
+    passwordHash: await passwordDigest("Admin123!"),
     role: "admin",
     categoryIds: [],
     createdAt: new Date().toISOString(),
@@ -258,12 +305,45 @@ export async function removeDemoStaff() {
   if (demo) await db().users.delete(demo.id);
 }
 
-export async function authenticate(email: string, password: string) {
-  const user = await db().users.where("email").equals(email.trim().toLowerCase()).first();
-  if (!user) return null;
+export async function authenticate(email: string, password: string, role?: User["role"], otpCode?: string) {
+  const normalizedEmail = normalizeEmail(email);
+  const attempts = readLoginAttempts(normalizedEmail);
+  if (attempts.count >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
+    throw new Error("Too many attempts. Please wait a few minutes before trying again.");
+  }
+
+  const user = await db().users.where("email").equals(normalizedEmail).first();
+  if (!user) {
+    recordLoginFailure(normalizedEmail);
+    return null;
+  }
+
+  if (role && user.role !== role) {
+    recordLoginFailure(normalizedEmail);
+    return null;
+  }
+
   const accepted = user.passwordHash ? user.passwordHash === await passwordDigest(password) : user.password === password;
-  if (!accepted) return null;
-  // Seamlessly remove credentials from older v2 installations after a successful login.
+  if (!accepted) {
+    recordLoginFailure(normalizedEmail);
+    return null;
+  }
+
+  clearLoginFailures(normalizedEmail);
+
+  if (user.role === "admin" || user.role === "staff") {
+    const mfaChallenge = getMfaChallenge(normalizedEmail);
+    const code = otpCode ?? "";
+    const validOtp = code.length === MFA_CODE_LENGTH && sessionStorage.getItem(`stockline-mfa:${mfaChallenge.challengeId}`) === code;
+    if (!otpCode) {
+      return { ...user, requiresMfa: true, challengeId: mfaChallenge.challengeId };
+    }
+    if (!validOtp) {
+      throw new Error("Invalid verification code.");
+    }
+    sessionStorage.removeItem(`stockline-mfa:${mfaChallenge.challengeId}`);
+  }
+
   if (!user.passwordHash) {
     const passwordHash = await passwordDigest(password);
     await db().users.update(user.id, { passwordHash, password: undefined });
@@ -274,7 +354,9 @@ export async function authenticate(email: string, password: string) {
 
 export async function registerUser(input: { name: string; email: string; password: string }) {
   const email = normalizeEmail(input.email);
-  if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
+  if (!isStrongPassword(input.password)) {
+    throw new Error("Password must be at least 12 characters and include upper/lowercase, a number, and a symbol.");
+  }
   const existing = await db().users.where("email").equals(email).first();
   if (existing) throw new Error("An account with this email already exists.");
 
@@ -292,7 +374,7 @@ export async function registerUser(input: { name: string; email: string; passwor
 }
 
 export async function resetPassword(email: string, password: string) {
-  if (password.length < 8) return false;
+  if (!isStrongPassword(password)) return false;
   const user = await db().users.where("email").equals(normalizeEmail(email)).first();
   if (!user) return false;
   await db().users.update(user.id, { passwordHash: await passwordDigest(password), password: undefined });
@@ -301,7 +383,7 @@ export async function resetPassword(email: string, password: string) {
 
 export async function changePassword(userId: string, currentPassword: string, nextPassword: string) {
   const user = await db().users.get(userId);
-  if (!user || nextPassword.length < 8) return false;
+  if (!user || !isStrongPassword(nextPassword)) return false;
   const currentHash = await passwordDigest(currentPassword);
   const matches = user.passwordHash ? user.passwordHash === currentHash : user.password === currentPassword;
   if (!matches) return false;
