@@ -245,6 +245,7 @@ function StaffManager() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"staff" | "manager">("staff");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -252,6 +253,7 @@ function StaffManager() {
     setName(editing?.name ?? "");
     setEmail(editing?.email ?? "");
     setPassword("");
+    setRole(editing?.role === "manager" ? "manager" : "staff");
     setCategoryIds(editing?.categoryIds?.slice(0, 1) ?? []);
   }, [open, editing]);
 
@@ -263,8 +265,8 @@ function StaffManager() {
         await updateStaff(editing.id, { name, email, categoryIds, ...(password ? { password } : {}) });
         toast.success("Staff access updated");
       } else {
-        await createStaff({ name, email, password, categoryIds });
-        toast.success("Staff account created");
+        await createStaff({ name, email, password, categoryIds, role });
+        toast.success(`${role === "manager" ? "Manager" : "Staff"} account created`);
       }
       setOpen(false);
       return;
@@ -277,25 +279,26 @@ function StaffManager() {
   return (
     <section className="glass rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="label-mono">Access control</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Staff and category access</h2><p className="mt-1 text-sm text-fog/80">Staff see and work only in the categories you assign to them.</p></div>
-        <PrimaryButton onClick={() => { setEditing(null); setOpen(true); }}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Add staff</span></PrimaryButton>
+        <div><p className="label-mono">Access control</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Staff, managers, and category access</h2><p className="mt-1 text-sm text-fog/80">Staff and managers see and work only in the category assigned to them.</p></div>
+        <PrimaryButton onClick={() => { setEditing(null); setOpen(true); }}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Add team member</span></PrimaryButton>
       </div>
       <div className="mt-4 flex flex-col gap-2">
         {users.map((user) => (
           <div key={user.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-panel/40 px-3 py-3">
             <span className="grid size-8 place-items-center rounded-lg bg-aurora-a/15 text-aurora-a"><Users className="size-4" /></span>
             <div className="min-w-0 flex-1"><p className="text-sm font-medium text-strong">{user.name} <span className="label-mono ml-1">{user.role}</span></p><p className="truncate text-xs text-fog/75">{user.email} · {user.role === "admin" ? "All categories" : `Portal: ${categories.find((category) => category.id === user.categoryIds[0])?.name ?? "Not assigned"}`}</p></div>
-            {user.role === "staff" && <><button onClick={() => { setEditing(user); setOpen(true); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong">Edit access</button><button onClick={() => { if (confirm(`Remove ${user.name}'s staff account?`)) void deleteStaff(user.id).then(() => toast.success("Staff account removed")); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-rose">Remove</button></>}
+            {user.role !== "admin" && <><button onClick={() => { setEditing(user); setOpen(true); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong">Edit access</button><button onClick={() => { if (confirm(`Remove ${user.name}'s ${user.role} account?`)) void deleteStaff(user.id).then(() => toast.success(`${user.role === "manager" ? "Manager" : "Staff"} account removed`)); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-rose">Remove</button></>}
           </div>
         ))}
       </div>
-      <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit staff access" : "Add staff member"} subtitle="Assign one portal category to this staff member">
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? `Edit ${editing.role} access` : "Add team member"} subtitle="Choose a role and assign one portal category">
         <div className="flex flex-col gap-4">
+          <Field label="Role"><select className="field" value={role} onChange={(event) => setRole(event.target.value as "staff" | "manager")} disabled={!!editing}><option value="staff">Staff</option><option value="manager">Manager</option></select></Field>
           <Field label="Name"><input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Staff member name" /></Field>
           <Field label="Email"><input type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></Field>
           <Field label={editing ? "New password (leave blank to keep current)" : "Temporary password"}><input type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
           <Field label="Assigned portal category">{categories.length === 0 ? <p className="text-sm text-fog/70">Create a category first, then assign access here.</p> : <select className="field" value={categoryIds[0] ?? ""} onChange={(event) => setCategoryIds(event.target.value ? [event.target.value] : [])}><option value="">No category assigned</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>}</Field>
-          <div className="flex justify-end gap-2"><GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton><PrimaryButton onClick={() => void save()}>{editing ? "Save access" : "Create staff account"}</PrimaryButton></div>
+          <div className="flex justify-end gap-2"><GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton><PrimaryButton onClick={() => void save()}>{editing ? "Save access" : `Create ${role} account`}</PrimaryButton></div>
         </div>
       </Modal>
     </section>

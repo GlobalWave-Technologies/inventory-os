@@ -102,10 +102,10 @@ Use either role on the login screen:
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Administrator | `admin@veridian.local` | `admin123` |
-| Staff | `staff@veridian.local` | `staff123` |
+| Administrator | `admin@veridian.local` | `Admin123!` |
+| Manager | `manager@veridian.local` | `Manager1234!` |
 
-Demo accounts and inventory data are stored in the current browser. Staff access is limited to categories assigned by an administrator.
+Demo accounts and inventory data are stored in the current browser. Manager access is limited to one assigned category. Administrators can create and assign additional Staff and Manager accounts in Settings.
 
 ## Build with Lovable
 

@@ -20,7 +20,7 @@ export interface Category {
   deletedAt?: string;
 }
 
-export type UserRole = "admin" | "staff";
+export type UserRole = "admin" | "manager" | "staff";
 
 export interface User {
   id: string;
@@ -292,6 +292,23 @@ export async function ensureDefaultAdmin() {
   return admin;
 }
 
+export async function ensureDefaultManager() {
+  const existing = await db().users.where("email").equals("manager@veridian.local").first();
+  if (existing) return existing;
+  const category = await db().categories.filter((entry) => !entry.deletedAt).first();
+  const manager: User = {
+    id: uid(),
+    name: "Demo Manager",
+    email: "manager@veridian.local",
+    passwordHash: await passwordDigest("Manager1234!"),
+    role: "manager",
+    categoryIds: category ? [category.id] : [],
+    createdAt: new Date().toISOString(),
+  };
+  await db().users.add(manager);
+  return manager;
+}
+
 export async function removeDemoStaff() {
   const demo = await db().users.where("email").equals("staff@veridian.local").first();
   if (demo) await db().users.delete(demo.id);
@@ -299,6 +316,27 @@ export async function removeDemoStaff() {
 
 export async function authenticate(email: string, password: string, role?: User["role"]) {
   const normalizedEmail = normalizeEmail(email);
+  if (import.meta.env.DEV) {
+    const selectedRole = role ?? "staff";
+    const existing = await db().users.where("email").equals(normalizedEmail).first();
+    if (existing) return existing.role === selectedRole ? existing : null;
+
+    const category = selectedRole === "admin"
+      ? undefined
+      : await db().categories.filter((entry) => !entry.deletedAt).first();
+    const devUser: User = {
+      id: uid(),
+      name: normalizedEmail.split("@")[0] || `Demo ${selectedRole}`,
+      email: normalizedEmail,
+      passwordHash: await passwordDigest(password),
+      role: selectedRole,
+      categoryIds: category ? [category.id] : [],
+      createdAt: new Date().toISOString(),
+    };
+    await db().users.add(devUser);
+    return devUser;
+  }
+
   const attempts = readLoginAttempts(normalizedEmail);
   if (attempts.count >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
     throw new Error("Too many attempts. Please wait a few minutes before trying again.");
@@ -378,7 +416,7 @@ export async function listUsers() {
   return db().users.orderBy("createdAt").toArray();
 }
 
-export async function createStaff(input: { name: string; email: string; password: string; categoryIds: string[] }) {
+export async function createStaff(input: { name: string; email: string; password: string; categoryIds: string[]; role?: Exclude<UserRole, "admin"> }) {
   if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
   const categoryIds = input.categoryIds.slice(0, 1);
   const user: User = {
@@ -386,7 +424,7 @@ export async function createStaff(input: { name: string; email: string; password
     name: input.name.trim(),
     email: normalizeEmail(input.email),
     passwordHash: await passwordDigest(input.password),
-    role: "staff",
+    role: input.role ?? "staff",
     categoryIds,
     createdAt: new Date().toISOString(),
   };
@@ -647,10 +685,23 @@ export async function itemHistory(itemId: string) {
 
 /* ---------------- seed ---------------- */
 
-export async function seedIfEmpty() {
+let seedPromise: Promise<void> | null = null;
+
+export function seedIfEmpty() {
+  if (!seedPromise) {
+    seedPromise = seedDatabase().catch((error: unknown) => {
+      seedPromise = null;
+      throw error;
+    });
+  }
+  return seedPromise;
+}
+
+async function seedDatabase() {
   await ensureDefaultAdmin();
   const count = await db().categories.count();
   if (count > 0) {
+    await ensureDefaultManager();
     return;
   }
 
@@ -746,6 +797,7 @@ export async function seedIfEmpty() {
   ];
 
   for (const s of seeds) await createItem(s);
+  await ensureDefaultManager();
 }
 
 /* ---------------- backup ---------------- */

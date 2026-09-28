@@ -4,11 +4,13 @@ import {
   authenticate,
   db,
   ensureDefaultAdmin,
+  ensureDefaultManager,
   getUser,
   logPortalAccess,
   registerUser,
   removeDemoStaff,
   resetPassword,
+  seedIfEmpty,
   type User,
 } from "./db";
 
@@ -61,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [portalId, setPortalId] = useState<string | null>(null);
 
   useEffect(() => {
-    void ensureDefaultAdmin().then(removeDemoStaff).finally(() => {
+    void ensureDefaultAdmin().then(seedIfEmpty).then(ensureDefaultManager).then(removeDemoStaff).finally(() => {
       const sessionId = readSession();
       const cookie = document.cookie
         .split("; ")
@@ -121,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Dexie live queries update this immediately after an admin changes assignments.
   // A revoked worker is returned to the portal picker before any more scoped views render.
   useEffect(() => {
-    if (liveUser?.role === "staff" && portalId && !liveUser.categoryIds.includes(portalId)) {
+    if (liveUser && liveUser.role !== "admin" && portalId && !liveUser.categoryIds.includes(portalId)) {
       void logPortalAccess(liveUser.id, portalId, false);
       storeSession(liveUser.id);
       setPortalId(null);
