@@ -79,16 +79,14 @@ export function LoginScreen() {
         decoding="async"
         className="absolute inset-0 size-full object-cover object-center"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(30,58,138,0.82),rgba(30,58,138,0.58)_45%,rgba(37,99,235,0.22))]" aria-hidden="true" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(96,165,250,0.2),transparent_28%),radial-gradient(circle_at_85%_85%,rgba(22,163,74,0.12),transparent_26%)]" aria-hidden="true" />
-      <div className="relative min-h-screen px-4 py-5 sm:px-6 lg:px-12">
-        <header className="mx-auto flex max-w-7xl items-center justify-between gap-2 border-b border-white/15 pb-4">
+      <div className="relative min-h-screen px-3 py-4 sm:px-6 lg:px-12">
+        <header className="mx-auto flex max-w-7xl flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex min-w-0 items-center gap-2 text-left sm:gap-3">
-            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-12 shrink-0 rounded-lg bg-white object-contain sm:size-14" />
-            <span className="min-w-0"><span className="block truncate font-display text-[25px] leading-none text-white sm:text-2xl">StockLine</span><span className="label-mono mt-1 hidden text-white/70 sm:block">Inventory workspace</span></span>
+            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-11 shrink-0 rounded-lg bg-white object-contain sm:size-14" />
+            <span className="min-w-0"><span className="block truncate font-display text-[22px] leading-none text-white sm:text-[25px] sm:text-2xl">StockLine</span><span className="label-mono mt-1 hidden text-white/70 sm:block">Inventory workspace</span></span>
           </button>
-          <nav className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            {(["staff", "manager", "admin"] as const).map((role) => <button key={role} type="button" onClick={() => { setEntry(role); setMode("login"); }} className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold capitalize transition-colors sm:rounded-xl sm:px-4 sm:text-xs ${entry === role ? "border-aurora-a bg-aurora-a text-background" : "border-white/40 bg-[#1e3a8a]/80 text-white shadow-sm backdrop-blur hover:border-aurora-a hover:bg-[#1e3a8a]"}`}>{role}</button>)}
+          <nav className="flex w-full items-center gap-1.5 sm:w-auto sm:shrink-0 sm:gap-3">
+            {(["staff", "manager", "admin"] as const).map((role) => <button key={role} type="button" onClick={() => { setEntry(role); setMode("login"); }} className={`flex-1 rounded-lg border px-2.5 py-2 text-[10px] font-semibold capitalize transition-colors sm:flex-none sm:rounded-xl sm:px-4 sm:text-xs ${entry === role ? "border-aurora-a bg-aurora-a text-background" : "border-white/40 bg-[#1e3a8a]/80 text-white shadow-sm hover:border-aurora-a hover:bg-[#1e3a8a]"}`}>{role}</button>)}
           </nav>
         </header>
         <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl place-items-center lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:gap-12">
@@ -106,13 +104,13 @@ export function LoginScreen() {
         </section>
         {isLanding ? (
           <section className="w-full max-w-lg self-center text-center lg:justify-self-end lg:text-left">
-            <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/10 text-aurora-a shadow-2xl backdrop-blur-sm lg:mx-0"><Warehouse className="size-7" /></div>
-            <p className="label-mono mt-6 text-base text-white/65">One clear view of your operation</p>
-            <h1 className="mt-3 font-display text-5xl font-semibold leading-[0.92] text-white sm:text-6xl lg:text-[4.3rem]">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-white/80 sm:text-lg">Track, manage, and grow with ease from one clear, reliable workspace.</p>
-            <p className="mt-8 max-w-md text-base leading-7 text-white/70 sm:text-lg">Choose Staff, Manager, or Admin above to enter your workspace securely.</p>
+            <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-white/20 bg-white/10 text-sky-200 shadow-2xl sm:size-16 lg:mx-0"><Warehouse className="size-6 sm:size-7" /></div>
+            <p className="label-mono mt-5 text-[11px] tracking-[0.18em] text-sky-100/80 sm:mt-6 sm:text-base">One clear view of your operation</p>
+            <h1 className="mt-3 font-display text-[2.7rem] font-semibold leading-[0.86] text-white sm:text-5xl sm:leading-[0.92] lg:text-[4.3rem]">Track, Manage, and<br /><span className="bg-gradient-to-r from-sky-200 via-sky-300 to-blue-400 bg-clip-text text-transparent">Grow with Ease.</span></h1>
+            <p className="mt-4 max-w-lg text-sm leading-6 text-sky-50/85 sm:mt-5 sm:text-base sm:leading-7 lg:text-lg">Track, manage, and grow with ease from one clear, reliable workspace.</p>
+            <p className="mt-6 max-w-md text-sm leading-6 text-sky-100/75 sm:mt-8 sm:text-base sm:leading-7 lg:text-lg">Choose Staff, Manager, or Admin above to enter your workspace securely.</p>
           </section>
-        ) : <form onSubmit={submit} className="relative w-full max-w-[380px] self-center overflow-hidden rounded-[28px] border border-white/30 bg-[#1e3a8a]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-4 lg:justify-self-end">
+        ) : <form onSubmit={submit} className="relative w-full max-w-[380px] self-center overflow-hidden rounded-[28px] border border-white/30 bg-[#1e3a8a]/95 p-3 shadow-2xl shadow-black/50 sm:p-4 lg:justify-self-end">
         <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <button type="button" aria-label="Back to login options" onClick={() => { setEntry(null); setMode("login"); }} className="grid size-9 place-items-center rounded-xl border border-white/15 bg-white/5 text-white/80 transition-colors hover:border-aurora-a hover:bg-aurora-a/15 hover:text-white">

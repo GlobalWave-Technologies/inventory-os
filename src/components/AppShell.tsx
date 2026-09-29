@@ -76,28 +76,28 @@ export function AppShell({
 
       <div className="relative mx-auto flex max-w-[1440px] px-4 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8">
         {/* desktop rail */}
-        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-[#1e3a8a] bg-sidebar p-3 text-white shadow-[0_24px_70px_-40px_var(--aurora-a)] lg:flex">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3">
-            <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-white shadow-lg shadow-black/10">
+        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-hair bg-[#F5E9E7] p-3 text-strong shadow-[0_18px_40px_-28px_rgba(43,48,59,0.25)] lg:flex">
+          <div className="flex items-center gap-3 rounded-2xl border border-hair bg-panel/80 px-3 py-3 shadow-sm">
+            <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-white shadow-lg shadow-black/5">
               <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-11 rounded-lg object-contain" />
               <span className="absolute -bottom-1 -right-1 size-2.5 rounded-full border-2 border-panel bg-aurora-a" />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-xl leading-none text-white">StockLine</p>
-              <p className="label-mono mt-1 text-white/65">Inventory OS</p>
+              <p className="truncate font-display text-xl leading-none text-strong">StockLine</p>
+              <p className="label-mono mt-1 text-fog">Inventory OS</p>
             </div>
           </div>
 
           <nav className="mt-3 flex flex-col gap-1">
-            <p className="label-mono px-3 pb-2 pt-1 text-white/65">Workspace</p>
+            <p className="label-mono px-3 pb-2 pt-1 text-fog">Workspace</p>
             {visibleNav.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
                 activeOptions={{ exact: to === "/" }}
-                className="group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-white/80 transition-all hover:border-white/15 hover:bg-white/10 hover:text-white"
+                className="group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-fog transition-all hover:border-hair hover:bg-white hover:text-strong"
                 activeProps={{
-                  className: "!border-white/20 bg-white/15 font-medium !text-white shadow-[inset_0_0_24px_-14px_var(--aurora-a)]",
+                  className: "!border-[#F2544F]/35 bg-[#FDEAE8] font-medium !text-strong shadow-[inset_0_0_20px_-14px_rgba(242,84,79,0.18)]",
                 }}
               >
                 <Icon className="size-[18px] shrink-0 transition-transform group-hover:scale-110" />
@@ -106,8 +106,8 @@ export function AppShell({
             ))}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-white/20 bg-black/10 p-2">
-            <button onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/20 px-3 py-2.5 text-xs text-white/80 transition-colors hover:border-rose/60 hover:bg-rose/20 hover:text-white"><LogOut className="size-3.5" /> Sign out</button>
+          <div className="mt-auto rounded-2xl border border-hair bg-[#F8F1F0] p-2">
+            <button onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-hair px-3 py-2.5 text-xs text-fog transition-colors hover:border-rose/60 hover:bg-rose/10 hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
           </div>
         </aside>
 
