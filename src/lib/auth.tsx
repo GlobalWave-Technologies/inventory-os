@@ -5,10 +5,10 @@ import {
   db,
   ensureDefaultAdmin,
   ensureDefaultManager,
+  ensureDefaultStaff,
   getUser,
   logPortalAccess,
   registerUser,
-  removeDemoStaff,
   resetPassword,
   seedIfEmpty,
   type User,
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [portalId, setPortalId] = useState<string | null>(null);
 
   useEffect(() => {
-    void ensureDefaultAdmin().then(seedIfEmpty).then(ensureDefaultManager).then(removeDemoStaff).finally(() => {
+    void ensureDefaultAdmin().then(seedIfEmpty).then(ensureDefaultManager).then(ensureDefaultStaff).finally(() => {
       const sessionId = readSession();
       const cookie = document.cookie
         .split("; ")

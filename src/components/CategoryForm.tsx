@@ -13,10 +13,12 @@ export function CategoryForm({
   open,
   onClose,
   category,
+  entityName = "category",
 }: {
   open: boolean;
   onClose: () => void;
   category?: Category | null;
+  entityName?: "category" | "branch";
 }) {
   const [name, setName] = useState("");
   const [accent, setAccent] = useState<Category["accent"]>("a");
@@ -62,17 +64,17 @@ export function CategoryForm({
     <Modal
       open={open}
       onClose={onClose}
-      title={category ? "Edit category" : "New category"}
-      subtitle="Define the fields items in this category should carry"
+      title={category ? `Edit ${entityName}` : `New ${entityName}`}
+      subtitle={entityName === "branch" ? "Create a branch that managers and staff can be assigned to." : "Define the fields items in this category should carry"}
       wide
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Category name">
+        <Field label={`${entityName === "branch" ? "Branch" : "Category"} name`}>
           <input
             className="field"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Doors, Goats, Laptops…"
+            placeholder={entityName === "branch" ? "Central, North, Airport…" : "Doors, Goats, Laptops…"}
           />
         </Field>
         <Field label="Colour tag">
@@ -157,7 +159,7 @@ export function CategoryForm({
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
         <GhostButton onClick={onClose}>Cancel</GhostButton>
-        <PrimaryButton onClick={submit}>{category ? "Save changes" : "Create category"}</PrimaryButton>
+        <PrimaryButton onClick={submit}>{category ? "Save changes" : `Create ${entityName}`}</PrimaryButton>
       </div>
     </Modal>
   );

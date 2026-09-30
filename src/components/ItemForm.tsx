@@ -42,12 +42,14 @@ export function ItemForm({
   categories,
   item,
   defaultCategoryId,
+  canSetThreshold = true,
 }: {
   open: boolean;
   onClose: () => void;
   categories: Category[];
   item?: Item | null;
   defaultCategoryId?: string;
+  canSetThreshold?: boolean;
 }) {
   const [draft, setDraft] = useState<Draft>(emptyDraft(defaultCategoryId ?? categories[0]?.id ?? ""));
 
@@ -143,7 +145,7 @@ export function ItemForm({
           </Field>
         </div>
 
-        <Field label="Category">
+        <Field label={item && categories.length > 1 ? "Transfer to category" : "Category"}>
           <select
             className="field"
             value={draft.categoryId}
@@ -181,12 +183,13 @@ export function ItemForm({
           />
         </Field>
 
-        <Field label="Low-stock alert at">
+        <Field label={canSetThreshold ? "Low-stock alert at" : "Low-stock threshold (manager set)"}>
           <input
             type="number"
             min={0}
-            className="field num"
+            className="field num disabled:cursor-not-allowed disabled:opacity-75"
             value={draft.lowStockThreshold}
+            disabled={!canSetThreshold}
             onChange={(e) => set({ lowStockThreshold: e.target.value })}
           />
         </Field>

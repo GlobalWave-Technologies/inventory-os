@@ -1,23 +1,65 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Boxes, LayoutDashboard, Moon, Package, Settings, Sun, History, LogOut, ChartNoAxesCombined, ClipboardList } from "lucide-react";
+import { Activity, Bell, Boxes, ClipboardCheck, ClipboardList, LayoutDashboard, MapPinned, Moon, Package, PackageSearch, RotateCcw, Settings, ShoppingCart, Sun, Truck, Warehouse, ChartNoAxesCombined, LogOut, Users, ArrowLeftRight, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useTheme } from "@/lib/theme";
 import { useBootstrap } from "@/lib/ledger";
 import { useAuth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { LoginScreen } from "@/components/LoginScreen";
 import { PortalPicker } from "@/components/PortalPicker";
 import { LoadingPanels } from "@/components/Modal";
 
-const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/items", label: "Items", icon: Package },
-  { to: "/categories", label: "Categories", icon: Boxes },
-  { to: "/activity", label: "Movement log", icon: History },
-  { to: "/profit-loss", label: "Profit & loss", icon: ChartNoAxesCombined },
+type OperationsSection = "requests" | "transfers" | "stocktaking" | "returns" | "purchasing" | "suppliers" | "thresholds" | "notifications";
+type NavigationEntry = { to: "/" | "/items" | "/categories" | "/activity" | "/profit-loss" | "/reports" | "/settings" | "/admin"; label: string; icon: typeof Package; section?: OperationsSection; roles?: readonly ("admin" | "manager" | "staff")[]; badge?: number };
+
+const adminNavigation: NavigationEntry[] = [
+  { to: "/", label: "Overview", icon: LayoutDashboard },
+  { to: "/items", label: "Inventory", icon: Package },
+  { to: "/categories", label: "Products & categories", icon: Boxes },
+  { to: "/admin", section: "requests", label: "Requests & approvals", icon: ClipboardCheck, badge: 0 },
+  { to: "/admin", section: "transfers", label: "Transfers", icon: ArrowLeftRight },
+  { to: "/admin", section: "stocktaking", label: "Stocktaking", icon: ClipboardList },
+  { to: "/admin", section: "returns", label: "Sales & returns", icon: RotateCcw },
+  { to: "/admin", section: "purchasing", label: "Purchasing", icon: ShoppingCart },
+  { to: "/admin", section: "suppliers", label: "Suppliers", icon: Truck },
+  { to: "/admin", section: "thresholds", label: "Thresholds", icon: SlidersHorizontal },
+  { to: "/profit-loss", label: "Reports", icon: ChartNoAxesCombined },
+  { to: "/settings", label: "Settings & permissions", icon: Settings },
+  { to: "/activity", label: "Activity log", icon: Activity },
+  { to: "/admin", section: "notifications", label: "Notifications", icon: Bell },
+  { to: "/settings", label: "Team & location", icon: MapPinned },
+];
+
+const teamNavigation: NavigationEntry[] = [
+  { to: "/", label: "Overview", icon: LayoutDashboard },
+  { to: "/items", label: "Inventory", icon: Package },
+  { to: "/categories", label: "Products & categories", icon: Boxes, roles: ["manager"] },
+  { to: "/admin", section: "requests", label: "Requests & approvals", icon: ClipboardCheck, roles: ["manager"] },
+  { to: "/admin", section: "transfers", label: "Transfers", icon: ArrowLeftRight, roles: ["manager"] },
+  { to: "/admin", section: "stocktaking", label: "Stocktaking", icon: ClipboardList, roles: ["manager"] },
+  { to: "/admin", section: "returns", label: "Sales & returns", icon: RotateCcw, roles: ["manager"] },
+  { to: "/admin", section: "purchasing", label: "Purchasing", icon: ShoppingCart, roles: ["manager"] },
+  { to: "/admin", section: "suppliers", label: "Suppliers", icon: Truck, roles: ["manager"] },
+  { to: "/admin", section: "thresholds", label: "Thresholds", icon: SlidersHorizontal, roles: ["manager"] },
+  { to: "/profit-loss", label: "Reports", icon: ChartNoAxesCombined, roles: ["manager"] },
+  { to: "/activity", label: "Activity log", icon: Activity },
+  { to: "/admin", section: "notifications", label: "Notifications", icon: Bell, roles: ["manager", "staff"] },
   { to: "/reports", label: "Daily reports", icon: ClipboardList },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+];
+
+function WorkspaceLink({ entry, mobile = false }: { entry: NavigationEntry; mobile?: boolean }) {
+  const Icon = entry.icon;
+  const className = mobile
+    ? "flex min-w-[4.5rem] shrink-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
+    : "group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-fog transition-all hover:border-hair hover:bg-white hover:text-strong dark:hover:bg-panel";
+  const children = <><Icon className={mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"} /><span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>{mobile ? entry.label.split(" ")[0] : entry.label}</span>{!mobile && entry.badge !== undefined && entry.badge > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-amber/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber">{entry.badge}</span>}</>;
+  const activeClass = mobile ? "!text-aurora-a" : "!border-[#F2544F]/35 bg-[#FDEAE8] font-medium !text-strong shadow-[inset_0_0_20px_-14px_rgba(242,84,79,0.18)] dark:!border-aurora-a/60 dark:bg-nav-active";
+  if (entry.section) return <Link to="/admin" search={{ section: entry.section }} activeOptions={{ exact: false }} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
+  return <Link to={entry.to} activeOptions={{ exact: entry.to === "/" }} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
+}
 
 function AuroraField() {
   return (
@@ -61,6 +103,17 @@ export function AppShell({
 }) {
   const bootstrapped = useBootstrap();
   const { user, isAdmin, logout, portalId } = useAuth();
+  const operationCounts = useLiveQuery(async () => {
+    const database = db();
+    const [requests, transfers, orders, lowStock] = await Promise.all([
+      database.branchRequests.where("status").equals("pending").count(),
+      database.transfers.toArray(),
+      database.purchaseOrders.where("status").equals("ordered").count(),
+      database.items.filter((item) => !item.deletedAt && item.quantity <= item.lowStockThreshold).count(),
+    ]);
+    const transferAlerts = transfers.filter((transfer) => transfer.status === "pending" || transfer.status === "in-transit" || (transfer.status === "received" && Date.now() - Date.parse(transfer.receivedAt ?? "") < 7 * 24 * 60 * 60 * 1000)).length;
+    return { requests, alerts: requests + transferAlerts + orders + lowStock };
+  }, []);
 
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
@@ -68,7 +121,12 @@ export function AppShell({
     return <main className="min-h-screen bg-background p-4 pt-8 sm:p-8"><LoadingPanels count={4} /></main>;
   }
   if (!isAdmin && !portalId) return <PortalPicker />;
-  const visibleNav = nav.filter((entry) => isAdmin || (entry.to !== "/categories" && entry.to !== "/profit-loss"));
+  const visibleNav = isAdmin
+    ? adminNavigation.map((entry) => {
+        const badge = entry.section === "requests" ? operationCounts?.requests ?? 0 : entry.section === "notifications" ? operationCounts?.alerts ?? 0 : undefined;
+        return badge === undefined ? entry : { ...entry, badge };
+      })
+    : teamNavigation.filter((entry) => !entry.roles || entry.roles.includes(user.role));
 
   return (
     <div className="relative min-h-screen w-full text-fog">
@@ -76,7 +134,7 @@ export function AppShell({
 
       <div className="relative mx-auto flex max-w-[1440px] px-4 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8">
         {/* desktop rail */}
-        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-hair bg-[#F5E9E7] p-3 text-strong shadow-[0_18px_40px_-28px_rgba(43,48,59,0.25)] lg:flex">
+        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-hair bg-[#F5E9E7] p-3 text-strong shadow-[0_18px_40px_-28px_rgba(43,48,59,0.25)] dark:bg-sidebar dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.8)] lg:flex">
           <div className="flex items-center gap-3 rounded-2xl border border-hair bg-panel/80 px-3 py-3 shadow-sm">
             <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-white shadow-lg shadow-black/5">
               <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-11 rounded-lg object-contain" />
@@ -88,25 +146,12 @@ export function AppShell({
             </div>
           </div>
 
-          <nav className="mt-3 flex flex-col gap-1">
+          <nav className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto [scrollbar-width:thin]">
             <p className="label-mono px-3 pb-2 pt-1 text-fog">Workspace</p>
-            {visibleNav.map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                activeOptions={{ exact: to === "/" }}
-                className="group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-fog transition-all hover:border-hair hover:bg-white hover:text-strong"
-                activeProps={{
-                  className: "!border-[#F2544F]/35 bg-[#FDEAE8] font-medium !text-strong shadow-[inset_0_0_20px_-14px_rgba(242,84,79,0.18)]",
-                }}
-              >
-                <Icon className="size-[18px] shrink-0 transition-transform group-hover:scale-110" />
-                {label}
-              </Link>
-            ))}
+            {visibleNav.map((entry, index) => <WorkspaceLink key={`${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} />)}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-hair bg-[#F8F1F0] p-2">
+          <div className="mt-auto rounded-2xl border border-hair bg-[#F8F1F0] p-2 dark:bg-panel">
             <button onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-hair px-3 py-2.5 text-xs text-fog transition-colors hover:border-rose/60 hover:bg-rose/10 hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
           </div>
         </aside>
@@ -139,18 +184,7 @@ export function AppShell({
       {/* mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-lg overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {visibleNav.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              activeOptions={{ exact: to === "/" }}
-              className="flex min-w-[4.5rem] shrink-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
-              activeProps={{ className: "!text-aurora-a" }}
-            >
-              <Icon className="size-[18px]" />
-              <span className="max-w-full truncate px-1">{label.split(" ")[0]}</span>
-            </Link>
-          ))}
+          {visibleNav.map((entry, index) => <WorkspaceLink key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobile />)}
         </div>
       </nav>
     </div>

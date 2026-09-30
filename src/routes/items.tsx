@@ -8,6 +8,7 @@ import { EmptyState, Field, LoadingPanels, Modal } from "@/components/Modal";
 import { ItemForm } from "@/components/ItemForm";
 import { accentVar, isLow, statusLabel, useAccessibleCategories, useItemHistory, useAccessibleItems } from "@/lib/ledger";
 import { adjustStock, deleteItem, type Item } from "@/lib/db";
+import { useAuth } from "@/lib/auth";
 import { money, shortDate, timeAgo } from "@/lib/format";
 
 type ItemSearch = { category?: string };
@@ -39,22 +40,33 @@ function ItemsPage() {
   const navigate = Route.useNavigate();
   const items = useAccessibleItems();
   const categories = useAccessibleCategories();
+  const { user } = useAuth();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | Item["status"]>("all");
-  const [lowOnly, setLowOnly] = useState(false);
+  const [stockLevel, setStockLevel] = useState<"all" | "low" | "healthy">("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
   const [detail, setDetail] = useState<Item | null>(null);
   const [adjusting, setAdjusting] = useState<Item | null>(null);
   const [page, setPage] = useState(1);
+  const branchItems = useMemo(
+    () => (items ?? []).filter((item) => (category ? item.categoryId === category : true)),
+    [items, category],
+  );
+  const branchName = categories?.find((entry) => entry.id === category)?.name;
+  const lowStockCount = branchItems.filter(isLow).length;
+  const healthyStockCount = branchItems.length - lowStockCount;
+  const soldUnits = branchItems.reduce((total, item) => total + item.soldQuantity, 0);
+  const availableUnits = branchItems
+    .filter((item) => item.status === "in-stock")
+    .reduce((total, item) => total + item.quantity, 0);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (items ?? [])
-      .filter((i) => (category ? i.categoryId === category : true))
+    return branchItems
       .filter((i) => (status === "all" ? true : i.status === status))
-      .filter((i) => (lowOnly ? isLow(i) : true))
+      .filter((i) => stockLevel === "all" ? true : stockLevel === "low" ? isLow(i) : !isLow(i))
       .filter((i) => {
         if (!q) return true;
         if (i.name.toLowerCase().includes(q) || i.location.toLowerCase().includes(q)) return true;
@@ -63,7 +75,7 @@ function ItemsPage() {
         );
       })
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }, [items, category, status, lowOnly, query]);
+  }, [branchItems, status, stockLevel, query]);
 
   const live = detail ? ((items ?? []).find((i) => i.id === detail.id) ?? detail) : null;
   const pageSize = 12;
@@ -79,8 +91,8 @@ function ItemsPage() {
 
   return (
     <AppShell
-      eyebrow="Stock"
-      title="Items"
+      eyebrow={branchName ? "Branch stock" : "Stock"}
+      title={branchName ?? "Items"}
       actions={
         <PrimaryButton
           onClick={() => {
@@ -95,6 +107,7 @@ function ItemsPage() {
       }
     >
       <div className="glass mb-4 flex flex-col gap-3 rounded-2xl p-3 sm:p-4">
+        {branchName && <p className="label-mono px-1">{branchName} inventory</p>}
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/50" />
           <input
@@ -109,7 +122,7 @@ function ItemsPage() {
           <FilterChip
             active={!category}
             onClick={() => void navigate({ search: {} })}
-            label="All categories"
+            label={user?.role === "admin" ? "All branches" : "All categories"}
           />
           {(categories ?? []).map((c) => (
             <FilterChip
@@ -131,20 +144,24 @@ function ItemsPage() {
               label={s === "all" ? "Any status" : statusLabel[s]}
             />
           ))}
-          <FilterChip
-            active={lowOnly}
-            onClick={() => setLowOnly((v) => !v)}
-            label="Low stock only"
-          />
+          <FilterChip active={stockLevel === "low"} onClick={() => setStockLevel((level) => level === "low" ? "all" : "low")} label={`Low stock (${branchName ? lowStockCount : ""})`} />
+          <FilterChip active={stockLevel === "healthy"} onClick={() => setStockLevel((level) => level === "healthy" ? "all" : "healthy")} label={`Above alert (${branchName ? healthyStockCount : ""})`} />
         </div>
       </div>
+
+      {branchName && <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <BranchStat label="Items for sale" value={String(branchItems.filter((item) => item.status === "in-stock").length)} />
+        <BranchStat label="Units sold" value={String(soldUnits)} />
+        <BranchStat label="Available units" value={String(availableUnits)} />
+        <BranchStat label="Low stock items" value={String(lowStockCount)} tone={lowStockCount > 0 ? "text-amber" : undefined} />
+      </div>}
 
       {!items || !categories ? (
         <LoadingPanels count={4} />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<Package className="size-6" />}
-          title={items.length === 0 ? "No items yet" : "Nothing matches那 filter"}
+          title={items.length === 0 ? "No items yet" : "Nothing matches that filter"}
           body={
             items.length === 0
               ? "Add your first item and its quantity, location and value in Ghana cedis."
@@ -190,17 +207,20 @@ function ItemsPage() {
                         {cat?.name ?? "—"} · {item.location || "No location"}
                       </p>
                     </div>
-                    {isLow(item) && (
-                      <span className="shrink-0 rounded-lg bg-amber/15 px-2 py-0.5 text-[10px] font-medium text-amber">
-                        LOW
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="rounded-lg bg-panel/70 px-2 py-0.5 text-[10px] font-medium text-fog">{statusLabel[item.status]}</span>
+                      <span className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${isLow(item) ? "bg-amber/15 text-amber" : "bg-aurora-a/10 text-aurora-a"}`}>
+                        {isLow(item) ? "LOW STOCK" : "ABOVE ALERT"}
                       </span>
-                    )}
+                    </div>
                   </div>
 
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div>
                       <p className="num text-xl font-semibold text-strong">{item.quantity}</p>
-                      <p className="label-mono mt-0.5">in stock</p>
+                      <p className="label-mono mt-0.5">on hand</p>
+                      <p className="label-mono mt-1">{item.soldQuantity} sold</p>
+                      <p className="label-mono mt-1">Alert at {item.lowStockThreshold} units</p>
                     </div>
                     <div className="text-right">
                       <p className="num text-sm text-strong">{money(item.quantity * item.originalPrice)}</p>
@@ -221,6 +241,7 @@ function ItemsPage() {
         categories={categories ?? []}
         item={editing}
         defaultCategoryId={category}
+        canSetThreshold={user?.role !== "staff"}
       />
 
       <ItemDetail
@@ -242,6 +263,15 @@ function ItemsPage() {
 
       <AdjustModal item={adjusting} onClose={() => setAdjusting(null)} />
     </AppShell>
+  );
+}
+
+function BranchStat({ label, value, tone = "text-strong" }: { label: string; value: string; tone?: string }) {
+  return (
+    <section className="glass rounded-2xl p-3 sm:p-4">
+      <p className="label-mono">{label}</p>
+      <p className={`num mt-2 text-xl font-semibold ${tone}`}>{value}</p>
+    </section>
   );
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { AppShell, GhostButton, PrimaryButton } from "@/components/AppShell";
+import { CategoryForm } from "@/components/CategoryForm";
 import { useCategories, useItems } from "@/lib/ledger";
 import { clearAll, exportSnapshot, importSnapshot, type Snapshot } from "@/lib/db";
 import { money } from "@/lib/format";
@@ -39,7 +40,7 @@ function download(name: string, content: string, type: string) {
 const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 
 function SettingsPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, portalId } = useAuth();
   const items = useItems();
   const categories = useCategories();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -106,6 +107,7 @@ function SettingsPage() {
     return (
       <AppShell eyebrow="Account" title="Account settings">
         <PasswordManager userId={user?.id ?? ""} />
+        {user?.role === "manager" && <ManagerTeamDirectory categoryId={portalId ?? ""} categoryName={categories?.find((category) => category.id === portalId)?.name ?? "Assigned branch"} />}
       </AppShell>
     );
   }
@@ -191,6 +193,52 @@ function SettingsPage() {
   );
 }
 
+function ManagerTeamDirectory({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+  const users = useLiveQuery(() => db().users.where("role").equals("staff").toArray(), []) ?? [];
+  const staff = users.filter((member) => categoryId && member.categoryIds.includes(categoryId));
+  const [addOpen, setAddOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function addStaff() {
+    if (!categoryId) {
+      toast.error("This manager has no branch assigned.");
+      return;
+    }
+    if (!name.trim() || !phone.trim() || !email.trim() || !password) {
+      toast.error("Complete all staff account fields.");
+      return;
+    }
+    try {
+      await createStaff({ name, phone, email, password, categoryIds: [categoryId], role: "staff" });
+      toast.success("Staff account created. Share the email and temporary password with them.");
+      setAddOpen(false);
+      setName(""); setPhone(""); setEmail(""); setPassword("");
+    } catch {
+      toast.error("That email is already in use, or the temporary password is too short.");
+    }
+  }
+
+  return (
+    <section className="glass rounded-2xl p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="label-mono">Branch team</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Staff assigned to {categoryName}</h2><p className="mt-1 text-sm text-fog/75">Staff accounts created here can access this branch only.</p></div><PrimaryButton onClick={() => setAddOpen(true)}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Add staff</span></PrimaryButton></div>
+      {staff.length === 0 ? <p className="mt-3 text-sm text-fog/70">No staff are assigned to this branch yet.</p> : <div className="mt-4 flex flex-col gap-2">{staff.map((member) => <article key={member.id} className="flex items-center gap-3 rounded-xl border border-hair bg-panel/40 px-3 py-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-aurora-a/10 text-sm font-semibold text-aurora-a">{member.name.slice(0, 1).toUpperCase()}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-strong">{member.name}</p><p className="truncate text-xs text-fog/75">{[member.phone, member.email].filter(Boolean).join(" · ")}</p></div><span className="label-mono">Staff</span></article>)}</div>}
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add staff member" subtitle={`Assign to ${categoryName}`}>
+        <div className="flex flex-col gap-4">
+          <Field label="Name"><input className="field" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required /></Field>
+          <Field label="Contact number"><input className="field" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required /></Field>
+          <Field label="Email"><input className="field" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
+          <Field label="Temporary password"><input className="field" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /><p className="mt-1 text-xs text-fog/60">Staff can change this later in Settings.</p></Field>
+          <Field label="Assigned branch"><p className="field bg-panel/50">{categoryName}</p></Field>
+          <div className="flex justify-end gap-2"><GhostButton onClick={() => setAddOpen(false)}>Cancel</GhostButton><PrimaryButton onClick={() => void addStaff()}>Create staff account</PrimaryButton></div>
+        </div>
+      </Modal>
+    </section>
+  );
+}
+
 function PasswordManager({ userId }: { userId: string }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
@@ -240,10 +288,12 @@ function PasswordManager({ userId }: { userId: string }) {
 function StaffManager() {
   const categories = useCategories() ?? [];
   const users = useLiveQuery(() => db().users.orderBy("createdAt").toArray(), []) ?? [];
+  const [branchFormOpen, setBranchFormOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"staff" | "manager">("staff");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
@@ -252,6 +302,7 @@ function StaffManager() {
     if (!open) return;
     setName(editing?.name ?? "");
     setEmail(editing?.email ?? "");
+    setPhone(editing?.phone ?? "");
     setPassword("");
     setRole(editing?.role === "manager" ? "manager" : "staff");
     setCategoryIds(editing?.categoryIds?.slice(0, 1) ?? []);
@@ -259,13 +310,14 @@ function StaffManager() {
 
   async function save() {
     if (!name.trim() || !email.trim()) return toast.error("Enter a name and email address.");
+    if (role === "manager" && !phone.trim()) return toast.error("Enter the manager's contact number.");
     if (!editing && !password) return toast.error("Set a temporary password for this staff account.");
     try {
       if (editing) {
-        await updateStaff(editing.id, { name, email, categoryIds, ...(password ? { password } : {}) });
+        await updateStaff(editing.id, { name, email, phone, categoryIds, ...(password ? { password } : {}) });
         toast.success("Staff access updated");
       } else {
-        await createStaff({ name, email, password, categoryIds, role });
+        await createStaff({ name, email, phone, password, categoryIds, role });
         toast.success(`${role === "manager" ? "Manager" : "Staff"} account created`);
       }
       setOpen(false);
@@ -279,28 +331,30 @@ function StaffManager() {
   return (
     <section className="glass rounded-2xl p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="label-mono">Access control</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Staff, managers, and category access</h2><p className="mt-1 text-sm text-fog/80">Staff and managers see and work only in the category assigned to them.</p></div>
-        <PrimaryButton onClick={() => { setEditing(null); setOpen(true); }}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Add team member</span></PrimaryButton>
+        <div><p className="label-mono">Access control</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Branches, managers, and team access</h2><p className="mt-1 text-sm text-fog/80">Create branches, add manager accounts, and assign each team member to one branch.</p></div>
+        <div className="flex flex-wrap gap-2"><GhostButton onClick={() => setBranchFormOpen(true)}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Create branch</span></GhostButton><PrimaryButton onClick={() => { setEditing(null); setOpen(true); }}><span className="flex items-center gap-1.5"><Plus className="size-4" /> Add team member</span></PrimaryButton></div>
       </div>
       <div className="mt-4 flex flex-col gap-2">
         {users.map((user) => (
           <div key={user.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-panel/40 px-3 py-3">
             <span className="grid size-8 place-items-center rounded-lg bg-aurora-a/15 text-aurora-a"><Users className="size-4" /></span>
-            <div className="min-w-0 flex-1"><p className="text-sm font-medium text-strong">{user.name} <span className="label-mono ml-1">{user.role}</span></p><p className="truncate text-xs text-fog/75">{user.email} · {user.role === "admin" ? "All categories" : `Portal: ${categories.find((category) => category.id === user.categoryIds[0])?.name ?? "Not assigned"}`}</p></div>
-            {user.role !== "admin" && <><button onClick={() => { setEditing(user); setOpen(true); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong">Edit access</button><button onClick={() => { if (confirm(`Remove ${user.name}'s ${user.role} account?`)) void deleteStaff(user.id).then(() => toast.success(`${user.role === "manager" ? "Manager" : "Staff"} account removed`)); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-rose">Remove</button></>}
+            <div className="min-w-0 flex-1"><p className="text-sm font-medium text-strong">{user.name} <span className="label-mono ml-1">{user.role}</span></p><p className="truncate text-xs text-fog/75">{user.email}{user.phone ? ` · ${user.phone}` : ""} · {user.role === "admin" ? "All branches" : `Branch: ${categories.find((category) => category.id === user.categoryIds[0])?.name ?? "Not assigned"}`}</p></div>
+            {user.role !== "admin" && <><button onClick={() => { setEditing(user); setOpen(true); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong">Transfer / edit</button><button onClick={() => { if (confirm(`Remove ${user.name}'s ${user.role} account?`)) void deleteStaff(user.id).then(() => toast.success(`${user.role === "manager" ? "Manager" : "Staff"} account removed`)); }} className="rounded-lg border border-hair px-2.5 py-1.5 text-xs text-rose">Remove</button></>}
           </div>
         ))}
       </div>
-      <Modal open={open} onClose={() => setOpen(false)} title={editing ? `Edit ${editing.role} access` : "Add team member"} subtitle="Choose a role and assign one portal category">
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? `Transfer or edit ${editing.role}` : "Add team member"} subtitle="Assign one branch to each team member">
         <div className="flex flex-col gap-4">
           <Field label="Role"><select className="field" value={role} onChange={(event) => setRole(event.target.value as "staff" | "manager")} disabled={!!editing}><option value="staff">Staff</option><option value="manager">Manager</option></select></Field>
-          <Field label="Name"><input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Staff member name" /></Field>
+          <Field label="Name"><input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={role === "manager" ? "Manager name" : "Staff member name"} /></Field>
+          <Field label={`Contact number${role === "manager" ? " (required)" : ""}`}><input type="tel" autoComplete="tel" className="field" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 ..." /></Field>
           <Field label="Email"><input type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></Field>
-          <Field label={editing ? "New password (leave blank to keep current)" : "Temporary password"}><input type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-          <Field label="Assigned portal category">{categories.length === 0 ? <p className="text-sm text-fog/70">Create a category first, then assign access here.</p> : <select className="field" value={categoryIds[0] ?? ""} onChange={(event) => setCategoryIds(event.target.value ? [event.target.value] : [])}><option value="">No category assigned</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>}</Field>
+          <Field label={editing ? "Temporary password (leave blank to keep current)" : "Temporary password"}><input type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+          <Field label={editing ? "Transfer to branch" : "Assigned branch"}>{categories.length === 0 ? <p className="text-sm text-fog/70">Create a branch first, then assign access here.</p> : <select className="field" value={categoryIds[0] ?? ""} onChange={(event) => setCategoryIds(event.target.value ? [event.target.value] : [])}><option value="">No branch assigned</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select>}</Field>
           <div className="flex justify-end gap-2"><GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton><PrimaryButton onClick={() => void save()}>{editing ? "Save access" : `Create ${role} account`}</PrimaryButton></div>
         </div>
       </Modal>
+      <CategoryForm open={branchFormOpen} onClose={() => setBranchFormOpen(false)} entityName="branch" />
     </section>
   );
 }

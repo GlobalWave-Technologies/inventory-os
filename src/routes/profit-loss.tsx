@@ -1,15 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartNoAxesCombined, Coins, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/AppShell";
 import { LoadingPanels, EmptyState } from "@/components/Modal";
-import { accentVar, useCategories, useItems } from "@/lib/ledger";
+import { accentVar, useAccessibleCategories } from "@/lib/ledger";
+import { listDailySalesReports } from "@/lib/db";
 import { money } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const CATEGORY_PAGE_SIZE = 5;
+
+type ProfitLossLine = {
+  id: string;
+  name: string;
+  soldQuantity: number;
+  originalPrice: number;
+  sellingPrice: number;
+  cost: number;
+  revenue: number;
+  profit: number;
+};
 
 export const Route = createFileRoute("/profit-loss")({
   head: () => ({ meta: [{ title: "Profit & loss — StockLine Inventory" }] }),
@@ -17,61 +30,75 @@ export const Route = createFileRoute("/profit-loss")({
 });
 
 function ProfitLossPage() {
-  const { isAdmin } = useAuth();
-  const items = useItems();
-  const categories = useCategories();
+  const { isAdmin, user, portalId } = useAuth();
+  const categories = useAccessibleCategories();
+  const salesReports = useLiveQuery(() => listDailySalesReports(), []);
+  const salesReportsForUser = useMemo(
+    () => (salesReports ?? []).filter((salesReport) => salesReport.reportType !== "branch-summary" && (isAdmin || (user?.role === "manager" && salesReport.categoryId === portalId && user.categoryIds.includes(salesReport.categoryId)))),
+    [salesReports, isAdmin, user, portalId],
+  );
   const [categoryPage, setCategoryPage] = useState(1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("all");
 
   const report = useMemo(() => {
-    const list = items ?? [];
     const groups = (categories ?? []).map((category) => {
-      const categoryItems = list.filter((item) => item.categoryId === category.id);
-      const original = categoryItems.reduce((sum, item) => sum + item.soldQuantity * item.originalPrice, 0);
-      const revenue = categoryItems.reduce((sum, item) => sum + item.soldQuantity * item.sellingPrice, 0);
+      const itemTotals = new Map<string, ProfitLossLine>();
+      for (const salesReport of salesReportsForUser.filter((entry) => entry.categoryId === category.id)) {
+        for (const line of salesReport.lines) {
+          const total = itemTotals.get(line.itemId) ?? { id: line.itemId, name: line.itemName, soldQuantity: 0, originalPrice: 0, sellingPrice: 0, cost: 0, revenue: 0, profit: 0 };
+          total.soldQuantity += line.quantity;
+          total.cost += line.quantity * line.originalPrice;
+          total.revenue += line.quantity * line.sellingPrice;
+          total.originalPrice = total.cost / total.soldQuantity;
+          total.sellingPrice = total.revenue / total.soldQuantity;
+          total.profit = total.revenue - total.cost;
+          itemTotals.set(line.itemId, total);
+        }
+      }
+      const categoryItems = Array.from(itemTotals.values());
+      const original = categoryItems.reduce((sum, item) => sum + item.cost, 0);
+      const revenue = categoryItems.reduce((sum, item) => sum + item.revenue, 0);
       return { category, items: categoryItems, original, revenue, profit: revenue - original };
-    });
-    return {
-      groups,
-      original: groups.reduce((sum, group) => sum + group.original, 0),
-      revenue: groups.reduce((sum, group) => sum + group.revenue, 0),
-      chart: groups.map((group) => ({
-        category: group.category.name,
-        revenue: group.revenue,
-        profit: group.profit,
-      })),
-    };
-  }, [items, categories]);
+    }).filter((group) => group.items.length > 0);
+    return { groups };
+  }, [categories, salesReportsForUser]);
 
-  if (!isAdmin) {
+  if (!isAdmin && user?.role !== "manager") {
     return (
-      <AppShell eyebrow="Access" title="Admin only">
+      <AppShell eyebrow="Access" title="Manager access required">
         <section className="glass rounded-2xl p-5 text-sm text-fog/80">
-          Profit and loss reporting is available to the administrator only.
+          Profit and loss reporting is available to managers and administrators.
         </section>
       </AppShell>
     );
   }
 
-  if (!items || !categories) {
+  if (!categories || !salesReports) {
     return <AppShell eyebrow="Finance" title="Profit & loss"><LoadingPanels count={3} /></AppShell>;
   }
 
-  const profit = report.revenue - report.original;
-  const pageCount = Math.max(1, Math.ceil(report.groups.length / CATEGORY_PAGE_SIZE));
-  const visibleGroups = report.groups.slice((categoryPage - 1) * CATEGORY_PAGE_SIZE, categoryPage * CATEGORY_PAGE_SIZE);
+  const scopedGroups = isAdmin && selectedCategoryId !== "all"
+    ? report.groups.filter((group) => group.category.id === selectedCategoryId)
+    : report.groups;
+  const scopeOriginal = scopedGroups.reduce((sum, group) => sum + group.original, 0);
+  const scopeRevenue = scopedGroups.reduce((sum, group) => sum + group.revenue, 0);
+  const scopeProfit = scopeRevenue - scopeOriginal;
+  const pageCount = Math.max(1, Math.ceil(scopedGroups.length / CATEGORY_PAGE_SIZE));
+  const visibleGroups = scopedGroups.slice((categoryPage - 1) * CATEGORY_PAGE_SIZE, categoryPage * CATEGORY_PAGE_SIZE);
+  const selectedCategory = categories.find((category) => category.id === selectedCategoryId);
 
   return (
     <AppShell eyebrow="Finance" title="Profit & loss">
       <div className="flex flex-col gap-5">
-        <div><div className="mb-3"><p className="label-mono text-aurora-a">Admin overview</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Financial performance</h2></div><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Summary label="Original cost" value={report.original} icon={<Coins className="size-4" />} />
-          <Summary label="Total revenue" value={report.revenue} icon={<ChartNoAxesCombined className="size-4" />} />
-          <Summary label="Projected profit" value={profit} icon={profit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={profit >= 0 ? "text-aurora-a" : "text-rose"} />
+        <div><div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="label-mono text-aurora-a">{isAdmin ? selectedCategory ? `${selectedCategory.name} overview` : "General overview" : "Shop overview"}</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Financial performance</h2></div>{isAdmin && <label className="grid gap-1 text-xs text-fog/70">Scope<select className="field min-w-48" value={selectedCategoryId} onChange={(event) => { setSelectedCategoryId(event.target.value); setCategoryPage(1); }}><option value="all">All branches</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>}</div><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Summary label="Original cost" value={scopeOriginal} icon={<Coins className="size-4" />} />
+          <Summary label="Total revenue" value={scopeRevenue} icon={<ChartNoAxesCombined className="size-4" />} />
+          <Summary label="Sales profit" value={scopeProfit} icon={scopeProfit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={scopeProfit >= 0 ? "text-aurora-a" : "text-rose"} />
         </div></div>
 
-        {report.groups.length > 0 && <AnalysisChart data={report.chart} />}
+        {scopedGroups.length > 0 && <AnalysisChart data={scopedGroups.map((group) => ({ category: group.category.name, revenue: group.revenue, profit: group.profit }))} />}
 
-        {report.groups.length === 0 ? (
+        {scopedGroups.length === 0 ? (
           <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No category data yet" body="Add items with original and sold prices to see profit and loss." />
         ) : (
           <div className="flex flex-col gap-4">
@@ -96,8 +123,8 @@ function ProfitLossPage() {
                     </thead>
                     <tbody className="divide-y divide-hair/70">
                       {group.items.map((item) => {
-                        const itemRevenue = item.soldQuantity * item.sellingPrice;
-                        const itemProfit = item.soldQuantity * (item.sellingPrice - item.originalPrice);
+                        const itemRevenue = item.revenue;
+                        const itemProfit = item.profit;
                         return <tr key={item.id}><td className="px-4 py-3 text-strong sm:px-5">{item.name}</td><td className="num px-4 py-3">{item.soldQuantity}</td><td className="num px-4 py-3">{money(item.originalPrice)}</td><td className="num px-4 py-3">{money(item.sellingPrice)}</td><td className="num px-4 py-3">{money(itemRevenue)}</td><td className={`num px-4 py-3 sm:px-5 ${itemProfit >= 0 ? "text-aurora-a" : "text-rose"}`}>{money(itemProfit)}</td></tr>;
                       })}
                     </tbody>
@@ -116,15 +143,16 @@ function ProfitLossPage() {
             )}
           </div>
         )}
-        <p className="text-xs text-fog/60">Revenue and profit use units sold and the prices saved on each item. Totals include every category.</p>
+        <p className="text-xs text-fog/60">{isAdmin ? selectedCategory ? `Calculated from submitted sales reports for ${selectedCategory.name}.` : "Calculated from submitted individual sales reports across all branches." : "Calculated from staff and manager sales reports for your assigned branch."}</p>
       </div>
     </AppShell>
   );
 }
 
 function AnalysisChart({ data }: { data: Array<{ category: string; revenue: number; profit: number }> }) {
-  const highest = data.reduce((best, current) => current.revenue > best.revenue ? current : best, data[0]);
-  const lowest = data.reduce((worst, current) => current.revenue < worst.revenue ? current : worst, data[0]);
+  if (data.length === 0) return null;
+  const highest = data.reduce((best, current) => current.revenue > best.revenue ? current : best, data[0]!);
+  const lowest = data.reduce((worst, current) => current.revenue < worst.revenue ? current : worst, data[0]!);
 
   return (
     <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">

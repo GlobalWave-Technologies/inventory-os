@@ -56,16 +56,21 @@ function CategoriesPage() {
       eyebrow="Structure"
       title="Categories"
       actions={isAdmin ? (
-        <PrimaryButton
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <span className="flex items-center gap-1.5">
-            <Plus className="size-4" /> New category
-          </span>
-        </PrimaryButton>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/settings" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-hair px-3 text-sm text-fog hover:text-strong">
+            <Users className="size-4" /> Assign managers
+          </Link>
+          <PrimaryButton
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <span className="flex items-center gap-1.5">
+              <Plus className="size-4" /> Create branch
+            </span>
+          </PrimaryButton>
+        </div>
       ) : undefined}
     >
       {!categories || !items ? (
@@ -76,14 +81,19 @@ function CategoriesPage() {
           title="No categories yet"
           body="Start with something real — Doors, Goats, Laptops — then add the fields those items carry."
           action={isAdmin ? (
-            <PrimaryButton
-              onClick={() => {
-                setEditing(null);
-                setOpen(true);
-              }}
-            >
-              Create a category
-            </PrimaryButton>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link to="/settings" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-hair px-3 text-sm text-fog hover:text-strong">
+                <Users className="size-4" /> Assign managers
+              </Link>
+              <PrimaryButton
+                onClick={() => {
+                  setEditing(null);
+                  setOpen(true);
+                }}
+              >
+                Create a branch
+              </PrimaryButton>
+            </div>
           ) : undefined}
         />
       ) : (
@@ -182,7 +192,7 @@ function CategoriesPage() {
         </div>
       )}
 
-      {isAdmin && <CategoryForm open={open} onClose={() => setOpen(false)} category={editing} />}
+      {isAdmin && <CategoryForm open={open} onClose={() => setOpen(false)} category={editing} entityName="branch" />}
     </AppShell>
   );
 }
