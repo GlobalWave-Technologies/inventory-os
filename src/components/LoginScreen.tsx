@@ -1,7 +1,8 @@
-import { ArrowLeft, ArrowRight, KeyRound, Mail, ShieldCheck, UserPlus, Warehouse } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 import type { User } from "@/lib/db";
 
 type AuthMode = "login" | "signup" | "forgot";
@@ -9,13 +10,24 @@ type EntryRole = User["role"];
 
 export function LoginScreen() {
   const { login, signup, forgotPassword } = useAuth();
-  const [entry, setEntry] = useState<EntryRole | null>(null);
+  const { mode: themeMode, toggle: toggleTheme } = useTheme();
+  const [entry, setEntry] = useState<EntryRole>("admin");
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberRole, setRememberRole] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const savedRole = localStorage.getItem("stockline-login-role");
+    if (savedRole === "admin" || savedRole === "manager" || savedRole === "staff") {
+      setEntry(savedRole);
+      setRememberRole(true);
+    }
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -27,6 +39,8 @@ export function LoginScreen() {
           toast.error(`Incorrect ${entry ?? "staff"} email or password.`);
           return;
         }
+        if (rememberRole) localStorage.setItem("stockline-login-role", entry);
+        else localStorage.removeItem("stockline-login-role");
         return;
       }
 
@@ -60,86 +74,62 @@ export function LoginScreen() {
 
   const isLogin = mode === "login";
   const isSignup = mode === "signup";
-  const isLanding = entry === null;
   const title = isLogin ? "Welcome back" : isSignup ? "Create your workspace" : "Recover access";
-  const roleLabel = entry === "admin" ? "Admin workspace" : entry === "manager" ? "Manager workspace" : "Staff workspace";
   const description = isLogin
-    ? "Sign in to keep every item, movement, and decision in view."
+    ? "Sign in to your inventory workspace"
     : isSignup
       ? "Set up a private StockLine account for your inventory team."
       : "Choose a new password for your local StockLine account.";
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#1e3a8a] text-fog">
-      <img
-        src="https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=1280&q=65&fm=webp"
-        alt=""
-        aria-hidden="true"
-        fetchPriority="high"
-        decoding="async"
-        className="absolute inset-0 size-full object-cover object-center"
-      />
-      <div className="relative min-h-screen px-3 py-4 sm:px-6 lg:px-12">
-        <header className="mx-auto flex max-w-7xl flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          <button type="button" onClick={() => { setEntry(null); setMode("login"); }} className="flex min-w-0 items-center gap-2 text-left sm:gap-3">
-            <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-11 shrink-0 rounded-lg bg-white object-contain sm:size-14" />
-            <span className="min-w-0"><span className="block truncate font-display text-[22px] leading-none text-[#1e3a8a] sm:text-[25px] sm:text-2xl">StockLine</span><span className="label-mono mt-1 hidden text-slate-700 sm:block">Inventory workspace</span></span>
-          </button>
-          <nav className="flex w-full items-center gap-1.5 sm:w-auto sm:shrink-0 sm:gap-3">
-            {(["staff", "manager", "admin"] as const).map((role) => <button key={role} type="button" onClick={() => { setEntry(role); setMode("login"); }} className={`flex-1 rounded-lg border px-2.5 py-2 text-[10px] font-semibold capitalize transition-colors sm:flex-none sm:rounded-xl sm:px-4 sm:text-xs ${entry === role ? "border-aurora-a bg-aurora-a text-background" : "border-white/40 bg-[#1e3a8a]/80 text-white shadow-sm hover:border-aurora-a hover:bg-[#1e3a8a]"}`}>{role}</button>)}
-          </nav>
-        </header>
-        <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl place-items-center lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] lg:gap-12">
-        <section className={`${isLanding ? "hidden" : "hidden lg:flex"} flex-col justify-end pb-12 text-white`}>
-          <div className="mb-7 flex items-center gap-2 text-white/70">
-            <span className="h-px w-8 bg-aurora-a" />
-            <p className="label-mono text-white/70">Inventory control, clearly visible</p>
+    <main className="grid min-h-[100svh] place-items-center bg-background px-4 py-[max(16px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))] text-strong">
+      <section className="glass relative w-full max-w-[400px] rounded-[28px] p-6 shadow-[8px_8px_20px_rgba(43,48,59,0.12),_-8px_-8px_20px_rgba(255,255,255,0.9)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.3),_-8px_-8px_20px_rgba(255,255,255,0.04)] sm:p-8">
+        <button type="button" onClick={toggleTheme} aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full text-fog transition-colors hover:bg-background">
+          {themeMode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </button>
+
+        <div className="mx-auto grid size-[76px] place-items-center rounded-full border border-aurora-a">
+          <div className="grid size-[54px] place-items-center rounded-full bg-background text-aurora-a shadow-[4px_4px_9px_rgba(43,48,59,0.12),_-4px_-4px_9px_rgba(255,255,255,0.8)] dark:shadow-[4px_4px_9px_rgba(0,0,0,0.28),_-4px_-4px_9px_rgba(255,255,255,0.04)]">
+            <img src="/stockline-logo.svg" alt="StockLine logo" className="size-8" />
           </div>
-          <h2 className="max-w-xl font-display text-6xl font-semibold leading-[0.9] tracking-tight">Track, Manage, and<br /><span className="text-aurora-a">Grow with Ease.</span></h2>
-          <p className="mt-6 max-w-md text-sm leading-6 text-white/70">StockLine gives your team a calm, reliable view of what is moving through the operation.</p>
-          <div className="mt-8 flex gap-3">
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80">Live stock view</span>
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/80">Private by default</span>
-          </div>
-        </section>
-        {isLanding ? (
-          <section className="w-full max-w-lg self-center text-center lg:justify-self-end lg:text-left">
-            <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-white/20 bg-white/10 text-sky-200 shadow-2xl sm:size-16 lg:mx-0"><Warehouse className="size-6 sm:size-7" /></div>
-            <p className="label-mono mt-5 text-[11px] tracking-[0.18em] text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)] sm:mt-6 sm:text-base">One clear view of your operation</p>
-            <h1 className="mt-3 font-display text-[2.7rem] font-semibold leading-[0.86] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:text-5xl sm:leading-[0.92] lg:text-[4.3rem]">Track, Manage, and<br /><span className="bg-gradient-to-r from-sky-200 via-sky-300 to-blue-400 bg-clip-text text-transparent">Grow with Ease.</span></h1>
-            <p className="mt-4 max-w-lg text-sm leading-6 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)] sm:mt-5 sm:text-base sm:leading-7 lg:text-lg">Track, manage, and grow with ease from one clear, reliable workspace.</p>
-            <p className="mt-6 max-w-md text-sm leading-6 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)] sm:mt-8 sm:text-base sm:leading-7 lg:text-lg">Choose Staff, Manager, or Admin above to enter your workspace securely.</p>
-          </section>
-        ) : <form onSubmit={submit} className="relative w-full max-w-[320px] self-center overflow-hidden rounded-[22px] border border-white/30 bg-[#1e3a8a]/95 p-2 shadow-2xl shadow-black/50 sm:p-2.5 lg:justify-self-end">
-        <div className="rounded-[16px] border border-white/10 bg-white/[0.04] p-2.5 sm:p-3">
-          <div className="flex items-center justify-between">
-            <button type="button" aria-label="Back to login options" onClick={() => { setEntry(null); setMode("login"); }} className="grid size-9 place-items-center rounded-xl border border-white/15 bg-white/5 text-white/80 transition-colors hover:border-aurora-a hover:bg-aurora-a/15 hover:text-white">
-              <img src="/back-arrow.svg" alt="" className="size-5" />
-            </button>
-            <div className="flex items-center gap-2"><span className="size-2 rounded-full bg-aurora-a" /><span className="label-mono text-white/60">{entry === "admin" ? "Admin" : entry === "manager" ? "Manager" : "Staff"}</span></div>
-          </div>
-          <div className="mt-4"><p className="label-mono text-aurora-a">{roleLabel}</p><h1 className="mt-1 font-display text-2xl font-semibold leading-[0.95] text-white">{title}</h1><p className="mt-2 max-w-sm text-[13px] leading-5 text-white/70">{description}</p></div>
-          {isLogin && <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-black/15 p-1">
-            {(["staff", "manager", "admin"] as const).map((role) => <button key={role} type="button" onClick={() => { setEntry(role); setMode("login"); }} className={`rounded-lg px-2 py-1.5 text-xs font-semibold capitalize transition-colors ${entry === role ? "bg-aurora-a text-background" : "text-white/60 hover:text-white"}`}>{role}</button>)}
+        </div>
+
+        <div className="mt-5 text-center">
+          <h1 className="font-display text-2xl font-semibold text-strong">StockLine</h1>
+          <p className="mt-1 text-sm text-fog/75">{description}</p>
+        </div>
+
+        {isLogin && <div className="mt-6 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Sign in as">
+          {(["admin", "manager", "staff"] as const).map((role) => <button key={role} type="button" role="radio" aria-checked={entry === role} onClick={() => setEntry(role)} className={`min-w-0 rounded-xl px-2 py-2.5 text-sm capitalize transition-colors ${entry === role ? "bg-aurora-a font-semibold text-white shadow-inner" : "bg-background text-fog shadow-[3px_3px_7px_rgba(43,48,59,0.10),_-3px_-3px_7px_rgba(255,255,255,0.85)] dark:shadow-[3px_3px_7px_rgba(0,0,0,0.25),_-3px_-3px_7px_rgba(255,255,255,0.04)]"}`}>{role}</button>)}
+        </div>}
+
+        <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+          {isSignup && <label className="block text-sm text-fog">Name<input required autoComplete="name" className="field mt-1.5" value={name} onChange={(event) => setName(event.target.value)} /></label>}
+          <label className="block text-sm text-fog">Email address<input required type="email" autoComplete="username" className="field mt-1.5" placeholder="name@company.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label className="block text-sm text-fog">{isLogin ? "Password" : "New password"}
+            <span className="relative mt-1.5 block">
+              <input required minLength={isLogin ? undefined : 12} type={showPassword ? "text" : "password"} autoComplete={isLogin ? "current-password" : "new-password"} className="field pr-11" placeholder={isLogin ? "Enter your password" : "Choose a new password"} value={password} onChange={(event) => setPassword(event.target.value)} />
+              <button type="button" onClick={() => setShowPassword((shown) => !shown)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-fog hover:bg-background">
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </span>
+          </label>
+          {isSignup && <label className="block text-sm text-fog">Confirm password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-1.5" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} /><span className="mt-1 block text-xs text-fog/65">Use 12+ characters with upper/lowercase, a number, and a symbol.</span></label>}
+
+          {isLogin && <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <label className="flex items-center gap-2 text-fog"><input type="checkbox" checked={rememberRole} onChange={(event) => setRememberRole(event.target.checked)} className="size-4 accent-aurora-a" />Remember role</label>
+            <button type="button" onClick={() => setMode("forgot")} className="font-medium text-aurora-a hover:underline">Forgot password?</button>
           </div>}
-        </div>
-        <div className="mt-2 rounded-[16px] bg-white p-2.5 shadow-xl shadow-black/10 sm:p-3">
-        <div className="space-y-2">
-          {isLogin && <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-900">Demo mode: use the listed demo credentials or enter any email and password. Access is stored in this browser.</p>}
-          {isSignup && <label className="block text-xs font-medium text-fog">Name<div className="relative mt-1.5"><UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required autoComplete="name" className="field py-2 pl-10" value={name} onChange={(e) => setName(e.target.value)} /></div></label>}
-          <label className="block text-xs font-medium text-fog">Email<div className="relative mt-1.5"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fog/45" /><input required type="email" autoComplete="email" className="field bg-white py-2 pl-10 text-slate-900" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
-          {isLogin && <label className="block text-xs font-medium text-fog">Password<input required type="password" autoComplete="current-password" className="field mt-1.5 bg-white py-2 text-slate-900" value={password} onChange={(e) => setPassword(e.target.value)} /></label>}
-          {!isLogin && <><label className="block text-xs font-medium text-fog">New password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-1.5 py-2" value={password} onChange={(e) => setPassword(e.target.value)} /></label><label className="block text-xs font-medium text-fog">Confirm password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-1.5 py-2" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></label><p className="text-xs text-fog/50">Use 12+ chars with upper/lowercase, a number, and a symbol.</p></>}
-        </div>
-        <button disabled={saving} className="group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aurora-a to-aurora-b text-sm font-semibold text-background shadow-lg shadow-aurora-a/20 transition-all hover:brightness-105 disabled:opacity-60">{isSignup ? <UserPlus className="size-4" /> : !isLogin ? <KeyRound className="size-4" /> : null}{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}{isLogin && <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}</button>
-        {isLogin && entry === "staff" && <div className="mt-3 text-center text-xs text-fog/65"><p>Already have access? Sign in above.</p><button type="button" onClick={() => setMode("signup")} className="mt-1 font-semibold text-aurora-a underline-offset-2 hover:underline">Create a staff account</button></div>}
-        {isLogin && entry === "admin" && <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-3 text-sm leading-5 text-slate-700"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-700" /><span>Demo admin access: <strong className="break-all text-slate-950">admin@veridian.local</strong> / <strong className="text-slate-950">Admin123!</strong></span></div>}
-        {isLogin && entry === "manager" && <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-3 text-sm leading-5 text-slate-700"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-700" /><span>Demo manager access: <strong className="break-all text-slate-950">manager@veridian.local</strong> / <strong className="break-all text-slate-950">Manager1234!</strong>. Access is limited to one assigned branch.</span></div>}
-        {isLogin && entry === "staff" && <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-3 text-sm leading-5 text-slate-700"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-700" /><span>Demo staff access: <strong className="break-all text-slate-950">staff@veridian.local</strong> / <strong className="break-all text-slate-950">Staff1234!</strong>. Access is limited to the assigned branch.</span></div>}
-        </div>
-        </form>}
-        </div>
-      </div>
+
+          <button type="submit" disabled={saving} className="mt-2 h-[50px] w-full rounded-full bg-gradient-to-r from-aurora-a to-aurora-b text-base font-semibold text-white shadow-[4px_4px_12px_rgba(242,84,79,0.22)] transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
+            {saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}
+          </button>
+        </form>
+
+        {isLogin && <p className="mt-5 text-center text-sm text-fog/75">Demo only. <button type="button" onClick={() => { const demo = { admin: ["admin@veridian.local", "Admin123!"], manager: ["manager@veridian.local", "Manager1234!"], staff: ["staff@veridian.local", "Staff1234!"] } as const; setEmail(demo[entry][0]); setPassword(demo[entry][1]); }} className="font-medium text-aurora-a hover:underline">Fill demo login</button></p>}
+        {!isLogin && <button type="button" onClick={() => { setMode("login"); setPassword(""); setConfirmPassword(""); }} className="mt-4 w-full text-center text-sm font-medium text-aurora-a hover:underline">Back to sign in</button>}
+        {isLogin && (entry === "staff" || entry === "admin") && <button type="button" onClick={() => setMode("signup")} className="mt-3 w-full text-center text-sm font-medium text-aurora-a hover:underline">Create a staff account</button>}
+      </section>
     </main>
   );
 }
