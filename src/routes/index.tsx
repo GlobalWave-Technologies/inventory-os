@@ -99,7 +99,7 @@ function Dashboard() {
         <LoadingPanels />
       ) : (
         <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             <Stat
               label="Units in stock"
               value={String(stats.count)}

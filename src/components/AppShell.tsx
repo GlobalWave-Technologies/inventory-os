@@ -188,9 +188,18 @@ export function AppShell({
 
       {mobileMoreOpen && <button type="button" aria-label="Close navigation menu" onClick={() => setMobileMoreOpen(false)} className="fixed inset-0 z-30 bg-black/20 lg:hidden" />}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:hidden">
-        {mobileMoreOpen && <div className="absolute inset-x-3 bottom-full mb-2 max-h-[min(70vh,32rem)] overflow-y-auto rounded-2xl border border-hair bg-panel p-2 shadow-2xl">
+        {mobileMoreOpen && <div className="absolute inset-x-3 bottom-full mb-2 flex max-h-[min(70vh,32rem)] flex-col overflow-hidden rounded-2xl border border-hair bg-panel p-2 shadow-2xl">
           <p className="label-mono px-3 py-2">All sections</p>
-          <div className="flex flex-col gap-1">{mobileMoreNav.map((entry, index) => <WorkspaceLink key={`more-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobileMenu onNavigate={() => setMobileMoreOpen(false)} />)}</div>
+          <div className="min-h-0 overflow-y-auto"><div className="flex flex-col gap-1">{mobileMoreNav.map((entry, index) => <WorkspaceLink key={`more-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobileMenu onNavigate={() => setMobileMoreOpen(false)} />)}</div></div>
+          <div className="mt-2 shrink-0 border-t border-hair px-1 pt-2">
+            <p className="truncate px-2 text-sm font-medium text-strong">{user.name}</p>
+            <div className="mt-1 flex items-center justify-between gap-3 px-2">
+              <span className="label-mono capitalize">{user.role}</span>
+              <button type="button" onClick={() => { setMobileMoreOpen(false); logout(); }} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-rose transition-colors hover:bg-rose/10">
+                <LogOut className="size-4" /> Sign out
+              </button>
+            </div>
+          </div>
         </div>}
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 pt-1">
           {mobilePrimaryNav.map((entry, index) => <WorkspaceLink key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobile />)}
