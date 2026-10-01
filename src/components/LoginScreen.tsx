@@ -82,7 +82,9 @@ export function LoginScreen() {
       : "Choose a new password for your local StockLine account.";
 
   return (
-    <main className="grid min-h-[100svh] place-items-center bg-background px-4 py-[max(16px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))] text-strong">
+    <main className="relative isolate grid min-h-[100svh] place-items-center overflow-hidden bg-background px-4 py-[max(16px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))] text-strong">
+      <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=80&fm=webp" alt="" aria-hidden="true" fetchPriority="high" decoding="async" className="absolute inset-0 size-full object-cover" />
+      <div aria-hidden="true" className="absolute inset-0 bg-background/55 backdrop-blur-[1px] dark:bg-background/70" />
       <section className="glass relative w-full max-w-[400px] rounded-[28px] p-6 shadow-[8px_8px_20px_rgba(43,48,59,0.12),_-8px_-8px_20px_rgba(255,255,255,0.9)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.3),_-8px_-8px_20px_rgba(255,255,255,0.04)] sm:p-8">
         <button type="button" onClick={toggleTheme} aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full text-fog transition-colors hover:bg-background">
           {themeMode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
