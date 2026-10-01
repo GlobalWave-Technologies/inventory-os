@@ -137,7 +137,7 @@ export function AppShell({
     <div className="relative min-h-screen w-full text-fog">
       <AuroraField />
 
-      <div className="relative mx-auto flex max-w-[1440px] px-4 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8">
+      <div className="relative mx-auto flex w-full min-w-0 max-w-[1440px] px-3 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8">
         {/* desktop rail */}
         <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-hair bg-[#F5E9E7] p-3 text-strong shadow-[0_18px_40px_-28px_rgba(43,48,59,0.25)] dark:bg-sidebar dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.8)] lg:flex">
           <div className="flex items-center gap-3 rounded-2xl border border-hair bg-panel/80 px-3 py-3 shadow-sm">
@@ -169,7 +169,7 @@ export function AppShell({
                 {title}
               </h1>
             </div>
-            <div className="flex items-center justify-self-end gap-3 sm:gap-4">
+            <div className="flex w-full min-w-0 max-w-full flex-wrap items-center justify-between justify-self-stretch gap-2 sm:w-auto sm:flex-nowrap sm:justify-self-auto sm:gap-4">
               <ThemeToggle />
               <span className="hidden text-right sm:block"><span className="block text-xs font-medium text-strong">{user.name}</span><span className="label-mono capitalize">{user.role}</span></span>
               {actions}
@@ -201,7 +201,7 @@ export function AppShell({
             </div>
           </div>
         </div>}
-        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1 px-2 pt-1">
+        <div className="mx-auto grid w-full min-w-0 max-w-lg grid-cols-5 gap-1 px-1 pt-1">
           {mobilePrimaryNav.map((entry, index) => <WorkspaceLink key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobile />)}
           {mobileMoreNav.length > 0 && <button type="button" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen((open) => !open)} className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2.5 text-[10px] ${mobileMoreOpen ? "text-aurora-a" : "text-fog/70"}`}><MoreHorizontal className="size-[18px]" /><span>More</span></button>}
         </div>
