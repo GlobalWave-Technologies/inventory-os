@@ -56,9 +56,9 @@ function WorkspaceLink({ entry, mobile = false, mobileMenu = false, onNavigate }
     ? "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-fog transition-colors hover:bg-background/70 hover:text-strong"
     : mobile
       ? "flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
-      : "group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-fog transition-all hover:border-hair hover:bg-white hover:text-strong dark:hover:bg-panel";
-  const children = <><Icon className={mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"} /><span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>{mobile ? entry.label.split(" ")[0] : entry.label}</span>{(!mobile || mobileMenu) && entry.badge !== undefined && entry.badge > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-amber/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber">{entry.badge}</span>}</>;
-  const activeClass = mobile ? "!text-aurora-a" : "!border-[#F2544F]/35 bg-[#FDEAE8] font-medium !text-strong shadow-[inset_0_0_20px_-14px_rgba(242,84,79,0.18)] dark:!border-aurora-a/60 dark:bg-nav-active";
+      : "group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-slate-200/85 transition-all hover:border-white/10 hover:bg-white/5 hover:text-white";
+  const children = <><Icon className={mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"} /><span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>{mobile ? entry.label.split(" ")[0] : entry.label}</span>{(!mobile || mobileMenu) && entry.badge !== undefined && entry.badge > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-amber/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber">{entry.badge}</span>}</>;
+  const activeClass = mobile ? "!text-aurora-b" : "!border-white/10 bg-nav-active font-medium !text-white shadow-[inset_0_0_20px_-14px_rgba(78,205,164,0.18)]";
   if (entry.section) return <Link to="/admin" search={{ section: entry.section }} activeOptions={{ exact: false }} onClick={onNavigate} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
   return <Link to={entry.to} activeOptions={{ exact: entry.to === "/" }} onClick={onNavigate} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
 }
@@ -139,25 +139,27 @@ export function AppShell({
 
       <div className="relative mx-auto flex w-full min-w-0 max-w-[1440px] px-3 pb-28 pt-5 sm:px-5 lg:px-8 lg:pb-8">
         {/* desktop rail */}
-        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-hair bg-[#F5E9E7] p-3 text-strong shadow-[0_18px_40px_-28px_rgba(43,48,59,0.25)] dark:bg-sidebar dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.8)] lg:flex">
-          <div className="flex items-center gap-3 rounded-2xl border border-hair bg-panel/80 px-3 py-3 shadow-sm">
-            <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-white shadow-lg shadow-black/5">
-              <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-11 rounded-lg object-contain" />
-              <span className="absolute -bottom-1 -right-1 size-2.5 rounded-full border-2 border-panel bg-aurora-a" />
+        <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-white/10 bg-sidebar p-3 text-white shadow-[0_18px_40px_-26px_rgba(15,46,61,0.45)] lg:flex">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-3 py-3 shadow-sm">
+            <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-[#4ECDA4] shadow-lg shadow-black/10">
+              <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-10 rounded-lg object-contain" />
+              <span className="absolute -bottom-1 -right-1 size-2.5 rounded-full border-2 border-sidebar bg-[#4ECDA4]" />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-xl leading-none text-strong">StockLine</p>
-              <p className="label-mono mt-1 text-fog">Inventory OS</p>
+              <p className="truncate font-display text-xl leading-none text-white">StockLine</p>
+              <p className="label-mono mt-1 text-slate-300">Inventory OS</p>
             </div>
           </div>
 
           <nav className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto [scrollbar-width:thin]">
-            <p className="label-mono px-3 pb-2 pt-1 text-fog">Workspace</p>
+            <p className="label-mono px-3 pb-2 pt-1 text-slate-300/80">Operations</p>
             {visibleNav.map((entry, index) => <WorkspaceLink key={`${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} />)}
           </nav>
 
-          <div className="mt-auto rounded-2xl border border-hair bg-[#F8F1F0] p-2 dark:bg-panel">
-            <button onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-hair px-3 py-2.5 text-xs text-fog transition-colors hover:border-rose/60 hover:bg-rose/10 hover:text-strong"><LogOut className="size-3.5" /> Sign out</button>
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/4 p-2 text-left">
+            <p className="label-mono text-slate-300/80">Guide template</p>
+            <p className="mt-1 text-xs text-slate-200/75">Sample data stays in this browser.</p>
+            <button onClick={logout} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-xs text-slate-200 transition-colors hover:border-rose/50 hover:bg-rose/10 hover:text-white"><LogOut className="size-3.5" /> Sign out</button>
           </div>
         </aside>
 

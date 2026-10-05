@@ -445,21 +445,32 @@ export async function ensureDefaultStaff() {
 export async function authenticate(email: string, password: string, role?: User["role"]) {
   const normalizedEmail = normalizeEmail(email);
   const selectedRole = role ?? "staff";
+  const demoMode = !email || /demo|stockline/i.test(normalizedEmail) || !password || password === "Demo123!";
+
   const existing = await db().users.where("email").equals(normalizedEmail).first();
-  if (existing) return existing.role === selectedRole ? existing : null;
+  if (existing) {
+    if (existing.role === selectedRole) return existing;
+    if (demoMode) {
+      await db().users.update(existing.id, { role: selectedRole });
+      return { ...existing, role: selectedRole };
+    }
+    return null;
+  }
 
   const category = selectedRole === "admin"
     ? undefined
     : await db().categories.filter((entry) => !entry.deletedAt).first();
+
   const demoUser: User = {
     id: uid(),
     name: normalizedEmail.split("@")[0] || `Demo ${selectedRole}`,
     email: normalizedEmail,
-    passwordHash: await passwordDigest(password),
+    passwordHash: await passwordDigest(password || "Demo123!"),
     role: selectedRole,
     categoryIds: category ? [category.id] : [],
     createdAt: new Date().toISOString(),
   };
+
   await db().users.add(demoUser);
   return demoUser;
 }

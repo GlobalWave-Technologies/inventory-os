@@ -12,9 +12,9 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  --font-display: "Instrument Serif", Georgia, serif;
-  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "DM Sans", "Segoe UI", sans-serif;
+  --font-sans: "DM Sans", "Segoe UI", sans-serif;
+  --font-mono: "DM Sans", "Segoe UI", sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -52,85 +52,85 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 1.25rem;
 
-  --background: #EEF0F3;
-  --foreground: #2B303B;
-  --strong: #2B303B;
+  --background: #F5F7F9;
+  --foreground: #14232F;
+  --strong: #14232F;
   --panel: #FFFFFF;
-  --sidebar: #F8F9FB;
-  --hair: #D3D7DE;
-  --fog: #586273;
-  --nav-active: #FEE4E2;
-  --amber-soft: #FDF2D0;
-  --overlay: rgb(43 48 59 / 42%);
+  --sidebar: #12293A;
+  --hair: #E3E8EC;
+  --fog: #7C8A96;
+  --nav-active: #1F3D4D;
+  --amber-soft: #FBEBD0;
+  --overlay: rgba(20, 35, 47, 0.22);
 
   --card: #FFFFFF;
-  --card-foreground: #2B303B;
+  --card-foreground: #14232F;
   --popover: #FFFFFF;
-  --popover-foreground: #2B303B;
-  --primary: #F2544F;
+  --popover-foreground: #14232F;
+  --primary: #0F2E3D;
   --primary-foreground: #FFFFFF;
-  --secondary: #F5F7FA;
-  --secondary-foreground: #2B303B;
-  --muted: #F5F7FA;
-  --muted-foreground: #586273;
-  --accent: #F2544F;
+  --secondary: #F7F9FA;
+  --secondary-foreground: #14232F;
+  --muted: #F2F6F7;
+  --muted-foreground: #7C8A96;
+  --accent: #0E8A6B;
   --accent-foreground: #FFFFFF;
-  --destructive: #DC2626;
+  --destructive: #D94B53;
   --destructive-foreground: #FFFFFF;
-  --border: #D3D7DE;
-  --input: #EEF0F3;
-  --ring: #F2544F;
+  --border: #E3E8EC;
+  --input: #F9FBFC;
+  --ring: #0E8A6B;
 
-  --aurora-a: #F2544F;
-  --aurora-b: #F43F5E;
-  --aurora-c: #22C55E;
-  --amber: #F5B301;
-  --rose: #DC2626;
+  --aurora-a: #0E8A6B;
+  --aurora-b: #4ECDA4;
+  --aurora-c: #5EBF95;
+  --amber: #D38A2B;
+  --rose: #D94B53;
 
-  --glow-a: 0 18px 40px -20px rgba(242, 84, 79, 0.36);
-  --shadow-panel: 0 12px 28px -20px rgba(43, 48, 59, 0.18);
+  --glow-a: 0 18px 40px -20px rgba(14, 138, 107, 0.23);
+  --shadow-panel: 0 14px 28px -18px rgba(20, 35, 47, 0.14);
 }
 
 .dark {
-  --background: #11151B;
-  --foreground: #F1F4F8;
-  --strong: #FAFCFF;
-  --panel: #1B2029;
-  --sidebar: #181D25;
-  --hair: #454E5C;
-  --fog: #BAC3D0;
-  --nav-active: #54232E;
-  --amber-soft: #453514;
-  --overlay: rgb(0 0 0 / 68%);
+  --background: #0F1B27;
+  --foreground: #EAF1F5;
+  --strong: #F7F9FA;
+  --panel: #172B39;
+  --sidebar: #0F2132;
+  --hair: #2A3D4B;
+  --fog: #A9B9C5;
+  --nav-active: #1F3D4D;
+  --amber-soft: #4E3B1A;
+  --overlay: rgba(8, 15, 22, 0.54);
 
-  --card: #1D232D;
-  --card-foreground: #FAFCFF;
-  --popover: #202631;
-  --popover-foreground: #FAFCFF;
-  --primary: #FF625B;
-  --primary-foreground: #FFFFFF;
-  --secondary: #252C36;
-  --secondary-foreground: #F1F4F8;
-  --muted: #252C36;
-  --muted-foreground: #BAC3D0;
-  --accent: #FF625B;
-  --accent-foreground: #FFFFFF;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #454E5C;
-  --input: #202732;
-  --ring: #FF756D;
+  --card: #193142;
+  --card-foreground: #F7F9FA;
+  --popover: #1C3547;
+  --popover-foreground: #F7F9FA;
+  --primary: #6AE0BB;
+  --primary-foreground: #0F1B27;
+  --secondary: #203847;
+  --secondary-foreground: #EAF1F5;
+  --muted: #203847;
+  --muted-foreground: #A9B9C5;
+  --accent: #5ED2A5;
+  --accent-foreground: #0F1B27;
+  --destructive: #F06B6C;
+  --destructive-foreground: #0F1B27;
+  --border: #2A3D4B;
+  --input: #1C3041;
+  --ring: #68D2B1;
 
-  --aurora-a: #FF756D;
-  --aurora-b: #FF6680;
-  --aurora-c: #55E69A;
-  --amber: #FFC247;
-  --rose: #FF8296;
+  --aurora-a: #5ED2A5;
+  --aurora-b: #89E2BF;
+  --aurora-c: #6AE0BB;
+  --amber: #F3B94E;
+  --rose: #F06B6C;
 
-  --glow-a: 0 18px 40px -20px rgba(255, 107, 99, 0.3);
-  --shadow-panel: 0 12px 28px -16px rgba(0, 0, 0, 0.72);
+  --glow-a: 0 18px 40px -20px rgba(94, 210, 165, 0.2);
+  --shadow-panel: 0 14px 28px -18px rgba(0, 0, 0, 0.52);
 }
 
 @layer base {

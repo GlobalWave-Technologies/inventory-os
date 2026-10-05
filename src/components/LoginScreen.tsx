@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { Eye, EyeOff, Menu, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -8,14 +8,20 @@ import type { User } from "@/lib/db";
 type AuthMode = "login" | "signup" | "forgot";
 type EntryRole = User["role"];
 
+const demoAccounts: Record<EntryRole, { email: string; password: string; label: string }> = {
+  admin: { email: "name@stockline.demo", password: "Demo123!", label: "General Admin" },
+  manager: { email: "name@stockline.demo", password: "Demo123!", label: "Manager" },
+  staff: { email: "name@stockline.demo", password: "Demo123!", label: "Staff" },
+};
+
 export function LoginScreen() {
   const { login, signup, forgotPassword } = useAuth();
   const { mode: themeMode, toggle: toggleTheme } = useTheme();
   const [entry, setEntry] = useState<EntryRole>("admin");
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(demoAccounts.admin.email);
+  const [password, setPassword] = useState(demoAccounts.admin.password);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberRole, setRememberRole] = useState(false);
@@ -28,6 +34,13 @@ export function LoginScreen() {
       setRememberRole(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (mode === "login") {
+      setEmail(demoAccounts[entry].email);
+      setPassword(demoAccounts[entry].password);
+    }
+  }, [entry, mode]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -72,65 +85,189 @@ export function LoginScreen() {
     }
   }
 
+  const isDark = themeMode === "dark";
   const isLogin = mode === "login";
   const isSignup = mode === "signup";
-  const title = isLogin ? "Welcome back" : isSignup ? "Create your workspace" : "Recover access";
-  const description = isLogin
-    ? "Sign in to your inventory workspace"
-    : isSignup
-      ? "Set up a private StockLine account for your inventory team."
-      : "Choose a new password for your local StockLine account.";
 
   return (
-    <main className="relative isolate grid min-h-[100svh] place-items-center overflow-hidden bg-background px-4 py-[max(16px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))] text-strong">
-      <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=80&fm=webp" alt="" aria-hidden="true" fetchPriority="high" decoding="async" className="absolute inset-0 size-full object-cover" />
-      <div aria-hidden="true" className="absolute inset-0 bg-background/55 backdrop-blur-[1px] dark:bg-background/70" />
-      <section className="glass relative w-full max-w-[400px] rounded-[28px] p-6 shadow-[8px_8px_20px_rgba(43,48,59,0.12),_-8px_-8px_20px_rgba(255,255,255,0.9)] dark:shadow-[8px_8px_20px_rgba(0,0,0,0.3),_-8px_-8px_20px_rgba(255,255,255,0.04)] sm:p-8">
-        <button type="button" onClick={toggleTheme} aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full text-fog transition-colors hover:bg-background">
-          {themeMode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </button>
+    <main className={`grid min-h-[100svh] ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}>
+      <section className={`relative overflow-hidden px-4 py-5 sm:px-8 lg:px-10 lg:py-8 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(78,205,164,0.16),transparent_26%),radial-gradient(circle_at_80%_90%,rgba(62,153,170,0.12),transparent_30%)]" aria-hidden="true" />
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="grid size-10 place-items-center rounded-xl bg-[#4ecda4] text-[#021c26] shadow-[0_8px_20px_rgba(78,205,164,0.35)]">
+            <Menu className="size-5" />
+          </div>
+          <div className={`text-2xl font-bold tracking-tight sm:text-3xl ${isDark ? "text-white" : "text-white"}`}>stockline</div>
+        </div>
 
-        <div className="mx-auto grid size-[76px] place-items-center rounded-full border border-aurora-a">
-          <div className="grid size-[54px] place-items-center rounded-full bg-background text-aurora-a shadow-[4px_4px_9px_rgba(43,48,59,0.12),_-4px_-4px_9px_rgba(255,255,255,0.8)] dark:shadow-[4px_4px_9px_rgba(0,0,0,0.28),_-4px_-4px_9px_rgba(255,255,255,0.04)]">
-            <img src="/stockline-logo.svg" alt="StockLine logo" className="size-8" />
+        <div className="relative z-10 mt-12 max-w-xl sm:mt-16 lg:mt-24">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#4ecda4] sm:text-[13px]">Inventory operations</p>
+          <h1 className={`mt-6 text-4xl font-semibold leading-[0.9] tracking-[-0.06em] sm:text-5xl lg:text-[5rem] ${isDark ? "text-white" : "text-white"}`}>
+            Every location.
+            <span className="mt-2 block">One clear view.</span>
+          </h1>
+
+          <p className={`mt-6 max-w-lg text-base leading-7 sm:text-xl sm:leading-8 ${isDark ? "text-slate-200/90" : "text-slate-200/90"}`}>
+            Track stock, review requests and keep each branch in sync.
+          </p>
+
+          <div className={`mt-8 max-w-lg rounded-[20px] border p-4 shadow-[0_15px_30px_rgba(8,20,27,0.18)] backdrop-blur-sm sm:mt-10 ${isDark ? "border-white/10 bg-[#123747]/75" : "border-white/10 bg-[#123747]/75"}`}>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
+                <span className="text-base text-slate-200">Head Warehouse</span>
+                <span className="text-right text-base font-medium text-[#4ecda4]">393 units</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
+                <span className="text-base text-slate-200">Accra Store</span>
+                <span className="text-right text-base font-medium text-[#4ecda4]">2 low-stock items</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-base text-slate-200">Kumasi Store</span>
+                <span className="text-right text-base font-medium text-[#4ecda4]">Awaiting approval</span>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="mt-5 text-center">
-          <h1 className="font-display text-2xl font-semibold text-strong">StockLine</h1>
-          <p className="mt-1 text-sm text-fog/75">{description}</p>
-        </div>
-
-        {isLogin && <div className="mt-6 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Sign in as">
-          {(["admin", "manager", "staff"] as const).map((role) => <button key={role} type="button" role="radio" aria-checked={entry === role} onClick={() => setEntry(role)} className={`min-w-0 rounded-xl px-2 py-2.5 text-sm capitalize transition-colors ${entry === role ? "bg-aurora-a font-semibold text-white shadow-inner" : "bg-background text-fog shadow-[3px_3px_7px_rgba(43,48,59,0.10),_-3px_-3px_7px_rgba(255,255,255,0.85)] dark:shadow-[3px_3px_7px_rgba(0,0,0,0.25),_-3px_-3px_7px_rgba(255,255,255,0.04)]"}`}>{role}</button>)}
-        </div>}
-
-        <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-          {isSignup && <label className="block text-sm text-fog">Name<input required autoComplete="name" className="field mt-1.5" value={name} onChange={(event) => setName(event.target.value)} /></label>}
-          <label className="block text-sm text-fog">Email address<input required type="email" autoComplete="username" className="field mt-1.5" placeholder="name@company.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-          <label className="block text-sm text-fog">{isLogin ? "Password" : "New password"}
-            <span className="relative mt-1.5 block">
-              <input required minLength={isLogin ? undefined : 12} type={showPassword ? "text" : "password"} autoComplete={isLogin ? "current-password" : "new-password"} className="field pr-11" placeholder={isLogin ? "Enter your password" : "Choose a new password"} value={password} onChange={(event) => setPassword(event.target.value)} />
-              <button type="button" onClick={() => setShowPassword((shown) => !shown)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-fog hover:bg-background">
-                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            </span>
-          </label>
-          {isSignup && <label className="block text-sm text-fog">Confirm password<input required minLength={12} type="password" autoComplete="new-password" className="field mt-1.5" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} /><span className="mt-1 block text-xs text-fog/65">Use 12+ characters with upper/lowercase, a number, and a symbol.</span></label>}
-
-          {isLogin && <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <label className="flex items-center gap-2 text-fog"><input type="checkbox" checked={rememberRole} onChange={(event) => setRememberRole(event.target.checked)} className="size-4 accent-aurora-a" />Remember role</label>
-            <button type="button" onClick={() => setMode("forgot")} className="font-medium text-aurora-a hover:underline">Forgot password?</button>
-          </div>}
-
-          <button type="submit" disabled={saving} className="mt-2 h-[50px] w-full rounded-full bg-gradient-to-r from-aurora-a to-aurora-b text-base font-semibold text-white shadow-[4px_4px_12px_rgba(242,84,79,0.22)] transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
-            {saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}
+      <section className={`relative flex min-h-[45vh] items-center justify-center px-4 py-5 sm:px-6 lg:min-h-[100svh] lg:px-8 lg:py-6 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}>
+        <div className="relative w-full max-w-[620px]">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className={`absolute right-0 top-0 flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium shadow-[0_12px_24px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-colors sm:px-4 sm:text-base ${
+              isDark
+                ? "border-white/10 bg-[#1d3c47]/70 text-white hover:bg-[#244b59]"
+                : "border-[#d6dfe4] bg-white/80 text-[#14232f] hover:bg-white"
+            }`}
+          >
+            {themeMode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {themeMode === "dark" ? "Light mode" : "Dark mode"}
           </button>
-        </form>
 
-        {isLogin && <p className="mt-5 text-center text-sm text-fog/75">Demo only. <button type="button" onClick={() => { const demo = { admin: ["admin@veridian.local", "Admin123!"], manager: ["manager@veridian.local", "Manager1234!"], staff: ["staff@veridian.local", "Staff1234!"] } as const; setEmail(demo[entry][0]); setPassword(demo[entry][1]); }} className="font-medium text-aurora-a hover:underline">Fill demo login</button></p>}
-        {!isLogin && <button type="button" onClick={() => { setMode("login"); setPassword(""); setConfirmPassword(""); }} className="mt-4 w-full text-center text-sm font-medium text-aurora-a hover:underline">Back to sign in</button>}
-        {isLogin && (entry === "staff" || entry === "admin") && <button type="button" onClick={() => setMode("signup")} className="mt-3 w-full text-center text-sm font-medium text-aurora-a hover:underline">Create a staff account</button>}
+          <div className={`rounded-[28px] border p-5 shadow-[0_24px_56px_rgba(0,0,0,0.16)] sm:p-8 lg:p-10 ${isDark ? "border-white/10 bg-[#103744]" : "border-[#dfe4ea] bg-[#f6f8f9] shadow-[0_24px_56px_rgba(20,35,47,0.06)]"}`}>
+            <div className={isDark ? "text-left" : "text-left"}>
+              <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] sm:text-[13px] ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Secure workspace</p>
+              <h2 className={`mt-4 text-3xl font-semibold tracking-[-0.06em] sm:text-4xl lg:text-[3.2rem] ${isDark ? "text-white" : "text-[#14232f]"}`}>Sign in to Stockline</h2>
+              <p className={`mt-3 text-base sm:text-lg ${isDark ? "text-slate-200/80" : "text-[#7c8a96]"}`}>Access your assigned inventory and daily operations.</p>
+            </div>
+
+            <form onSubmit={submit} className="mt-8 space-y-5">
+              <div>
+                <label className={`mb-2 block text-base font-medium ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Work email</label>
+                <input
+                  required
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className={`w-full rounded-xl border px-4 py-4 text-base outline-none transition ${
+                    isDark
+                      ? "border-white/10 bg-[#2a4d5a] text-white placeholder:text-slate-200/60 focus:border-[#4ecda4] focus:ring-2 focus:ring-[#4ecda4]/20"
+                      : "border-[#d0d8de] bg-white text-[#14232f] placeholder:text-slate-500 focus:border-[#0e8a6b] focus:ring-2 focus:ring-[#0e8a6b]/20"
+                  }`}
+                  placeholder="name@stockline.demo"
+                />
+              </div>
+
+              <div>
+                <label className={`mb-2 block text-base font-medium ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Password</label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className={`w-full rounded-xl border px-4 py-4 pr-12 text-base outline-none transition ${
+                      isDark
+                        ? "border-white/10 bg-[#2a4d5a] text-white placeholder:text-slate-200/60 focus:border-[#4ecda4] focus:ring-2 focus:ring-[#4ecda4]/20"
+                        : "border-[#d0d8de] bg-white text-[#14232f] placeholder:text-slate-500 focus:border-[#0e8a6b] focus:ring-2 focus:ring-[#0e8a6b]/20"
+                    }`}
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((shown) => !shown)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className={`absolute right-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full transition ${
+                      isDark ? "text-slate-200/80 hover:bg-white/5" : "text-[#7c8a96] hover:bg-slate-100"
+                    }`}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {isLogin && (
+                <div className="flex items-center justify-end">
+                  <button type="button" onClick={() => setMode("forgot")} className={`text-base font-medium transition hover:underline ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className={`flex w-full items-center justify-between rounded-xl px-6 py-4 text-left text-lg font-semibold shadow-[0_16px_32px_rgba(13,42,56,0.2)] transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                  isDark
+                    ? "bg-[#4ecda4] text-[#021c26] hover:bg-[#66d9b6] shadow-[0_16px_32px_rgba(78,205,164,0.25)]"
+                    : "bg-[#0d2a38] text-white hover:bg-[#123747]"
+                }`}
+              >
+                <span>{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}</span>
+                <span className="text-xl">→</span>
+              </button>
+            </form>
+
+            {isLogin && (
+              <div className={`mt-7 rounded-2xl border px-4 py-4 ${isDark ? "border-white/10 bg-[#1a3c48]/60" : "border-[#dfe4ea] bg-white/70"}`}>
+                <p className={`text-center text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>Choose a sample account</p>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {(["admin", "manager", "staff"] as const).map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => {
+                        setEntry(role);
+                        setEmail(demoAccounts[role].email);
+                        setPassword(demoAccounts[role].password);
+                      }}
+                      className={`rounded-xl border px-2 py-3 text-sm font-medium transition ${
+                        entry === role
+                          ? isDark
+                            ? "border-[#4ecda4] bg-[#4ecda4]/10 text-white"
+                            : "border-[#0e8a6b] bg-[#e7f7f2] text-[#0d2a38]"
+                          : isDark
+                            ? "border-white/10 bg-[#2a4d5a] text-slate-200 hover:border-[#4ecda4]/50"
+                            : "border-[#d0d8de] bg-white text-[#3f4d5d] hover:border-[#9cb8c1]"
+                      }`}
+                    >
+                      {demoAccounts[role].label}
+                    </button>
+                  ))}
+                </div>
+                <p className={`mt-4 text-center text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>
+                  Preview password: <span className={`font-medium ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Demo123!</span>
+                </p>
+              </div>
+            )}
+
+            {!isLogin && (
+              <button type="button" onClick={() => { setMode("login"); setPassword(""); setConfirmPassword(""); }} className={`mt-5 w-full text-center text-base font-medium hover:underline ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
+                Back to sign in
+              </button>
+            )}
+
+            {isLogin && (
+              <div className={`mt-7 text-center text-lg ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
+                Invited to join? <button type="button" onClick={() => setMode("signup")} className="font-medium underline">Preview account activation</button>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     </main>
   );
