@@ -104,7 +104,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const bootstrapped = useBootstrap();
-  const { user, isAdmin, logout, portalId } = useAuth();
+  const { user, isAdmin, logout, portalId, managerSectionEnabled } = useAuth();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const operationCounts = useLiveQuery(async () => {
     const database = db();
@@ -129,7 +129,7 @@ export function AppShell({
         const badge = entry.section === "requests" ? operationCounts?.requests ?? 0 : entry.section === "notifications" ? operationCounts?.alerts ?? 0 : undefined;
         return badge === undefined ? entry : { ...entry, badge };
       })
-    : teamNavigation.filter((entry) => !entry.roles || entry.roles.includes(user.role));
+    : teamNavigation.filter((entry) => !entry.roles || (user.role === "manager" && !managerSectionEnabled ? entry.roles.includes("staff") : entry.roles.includes(user.role)));
     const mobilePrimaryNav = visibleNav.slice(0, 4);
     const mobileMoreNav = visibleNav.slice(4);
 

@@ -30,12 +30,12 @@ export const Route = createFileRoute("/profit-loss")({
 });
 
 function ProfitLossPage() {
-  const { isAdmin, user, portalId } = useAuth();
+  const { isAdmin, user, portalId, managerSectionEnabled } = useAuth();
   const categories = useAccessibleCategories();
   const salesReports = useLiveQuery(() => listDailySalesReports(), []);
   const salesReportsForUser = useMemo(
-    () => (salesReports ?? []).filter((salesReport) => salesReport.reportType !== "branch-summary" && (isAdmin || (user?.role === "manager" && salesReport.categoryId === portalId && user.categoryIds.includes(salesReport.categoryId)))),
-    [salesReports, isAdmin, user, portalId],
+    () => (salesReports ?? []).filter((salesReport) => salesReport.reportType !== "branch-summary" && (isAdmin || (managerSectionEnabled && user?.role === "manager" && salesReport.categoryId === portalId && user.categoryIds.includes(salesReport.categoryId)))),
+    [salesReports, isAdmin, user, portalId, managerSectionEnabled],
   );
   const [categoryPage, setCategoryPage] = useState(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
@@ -63,7 +63,7 @@ function ProfitLossPage() {
     return { groups };
   }, [categories, salesReportsForUser]);
 
-  if (!isAdmin && user?.role !== "manager") {
+  if (!isAdmin && (user?.role !== "manager" || !managerSectionEnabled)) {
     return (
       <AppShell eyebrow="Access" title="Manager access required">
         <section className="glass rounded-2xl p-5 text-sm text-fog/80">

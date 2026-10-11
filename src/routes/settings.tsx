@@ -9,6 +9,7 @@ import { useCategories, useItems } from "@/lib/ledger";
 import { clearAll, exportSnapshot, importSnapshot, type Snapshot } from "@/lib/db";
 import { money } from "@/lib/format";
 import { Modal, Field } from "@/components/Modal";
+import { Switch } from "@/components/ui/switch";
 import { changePassword, createStaff, db, deleteStaff, updateStaff, type User } from "@/lib/db";
 import { useAuth } from "@/lib/auth";
 
@@ -40,7 +41,7 @@ function download(name: string, content: string, type: string) {
 const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 
 function SettingsPage() {
-  const { isAdmin, user, portalId } = useAuth();
+  const { isAdmin, user, portalId, managerSectionEnabled, setManagerSectionEnabled } = useAuth();
   const items = useItems();
   const categories = useCategories();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -116,6 +117,7 @@ function SettingsPage() {
     <AppShell eyebrow="Data" title="Settings">
       <div className="flex flex-col gap-4">
         <PasswordManager userId={user?.id ?? ""} />
+        <ManagerSectionControl enabled={managerSectionEnabled} onChange={setManagerSectionEnabled} />
         <StaffManager />
         <section className="glass rounded-2xl border-amber/30 bg-amber/[0.04] p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -190,6 +192,36 @@ function SettingsPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function ManagerSectionControl({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => Promise<void> }) {
+  const [saving, setSaving] = useState(false);
+
+  async function update(enabled: boolean) {
+    setSaving(true);
+    try {
+      await onChange(enabled);
+      toast.success(enabled ? "Manager access activated" : "Manager access deactivated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Manager access could not be updated.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="label-mono text-aurora-a">Reporting structure</p>
+          <h2 className="mt-1 font-display text-lg font-semibold text-strong">Manager section</h2>
+          <p className="mt-1 max-w-2xl text-sm text-fog/75">{enabled ? "Managers can access their branch sections and submit summaries to admin." : "Off: manager accounts work as staff, and their sales reports go directly to admin."}</p>
+        </div>
+        <Switch checked={enabled} disabled={saving} onCheckedChange={(checked) => void update(checked)} aria-label="Activate manager section" />
+      </div>
+      <p className="label-mono mt-3">{enabled ? "Active" : "Inactive"}</p>
+    </section>
   );
 }
 

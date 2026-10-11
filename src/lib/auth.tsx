@@ -7,11 +7,13 @@ import {
   ensureDefaultManager,
   ensureDefaultStaff,
   getUser,
+  getManagerSectionEnabled,
   logPortalAccess,
   registerUser,
   resetPassword,
   seedIfEmpty,
   type User,
+  setManagerSectionEnabled as saveManagerSectionEnabled,
 } from "./db";
 
 const SESSION_KEY = "stockline-session";
@@ -53,6 +55,9 @@ type AuthValue = {
   portalId: string | null;
   selectPortal: (portalId: string) => Promise<boolean>;
   clearPortal: () => void;
+  managerSectionEnabled: boolean;
+  managerSectionReady: boolean;
+  setManagerSectionEnabled: (enabled: boolean) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -76,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const liveUser = useLiveQuery(() => (userId ? getUser(userId) : undefined), [userId]);
+  const managerSectionEnabled = useLiveQuery(() => (ready ? getManagerSectionEnabled() : undefined), [ready]);
 
   useEffect(() => {
     if (ready && userId && liveUser === undefined) return;
@@ -134,6 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user: ready ? (userId ? liveUser : null) : undefined,
       isAdmin: liveUser?.role === "admin",
+      managerSectionEnabled: managerSectionEnabled ?? false,
+      managerSectionReady: managerSectionEnabled !== undefined,
+      setManagerSectionEnabled: async (enabled) => {
+        if (liveUser?.role !== "admin") throw new Error("Only administrators can change manager access.");
+        await saveManagerSectionEnabled(enabled);
+      },
       portalId,
       login: async (email, password, role) => {
         const user = await authenticate(email, password, role);
@@ -174,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPortalId(null);
       },
     }),
-    [ready, userId, liveUser, portalId],
+    [ready, userId, liveUser, portalId, managerSectionEnabled],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

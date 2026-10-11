@@ -36,6 +36,11 @@ export interface User {
   createdAt: string;
 }
 
+interface AppSetting {
+  key: string;
+  value: boolean;
+}
+
 export type ItemStatus = "in-stock" | "reserved" | "damaged" | "archived";
 
 export interface Item {
@@ -195,6 +200,7 @@ class LedgerDB extends Dexie {
   suppliers!: Table<Supplier, string>;
   purchaseOrders!: Table<PurchaseOrder, string>;
   saleReturns!: Table<SaleReturn, string>;
+  appSettings!: Table<AppSetting, string>;
 
   constructor() {
     super("northern-ledger");
@@ -325,6 +331,20 @@ class LedgerDB extends Dexie {
         entry.condition ??= "restock";
       });
     });
+    this.version(12).stores({
+      categories: "id, name, createdAt, deletedAt",
+      items: "id, categoryId, name, status, dateAdded, updatedAt, deletedAt",
+      activity: "id, at, kind, itemId",
+      users: "id, &email, role, createdAt",
+      dailySalesReports: "id, reportDate, categoryId, submittedBy, submittedAt",
+      branchRequests: "id, categoryId, status, createdAt",
+      transfers: "id, sourceCategoryId, destinationCategoryId, status, createdAt",
+      stocktakes: "id, categoryId, itemId, createdAt",
+      suppliers: "id, name, createdAt",
+      purchaseOrders: "id, supplierId, categoryId, status, createdAt",
+      saleReturns: "id, itemId, categoryId, createdAt",
+      appSettings: "key",
+    });
   }
 }
 
@@ -337,6 +357,14 @@ export function db(): LedgerDB {
   }
   if (!instance) instance = new LedgerDB();
   return instance;
+}
+
+export async function getManagerSectionEnabled() {
+  return (await db().appSettings.get("manager-section"))?.value ?? false;
+}
+
+export async function setManagerSectionEnabled(enabled: boolean) {
+  await db().appSettings.put({ key: "manager-section", value: enabled });
 }
 
 export const uid = () =>

@@ -34,7 +34,7 @@ export const Route = createFileRoute("/categories")({
 function CategoriesPage() {
   const categories = useAccessibleCategories();
   const items = useAccessibleItems();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user, managerSectionEnabled } = useAuth();
   const activity = useLiveQuery(() => db().activity.toArray(), []) ?? [];
   const users = useLiveQuery(() => db().users.toArray(), []) ?? [];
   const [open, setOpen] = useState(false);
@@ -43,6 +43,10 @@ function CategoriesPage() {
   const pageSize = 9;
   const pageCount = Math.max(1, Math.ceil((categories?.length ?? 0) / pageSize));
   const visibleCategories = categories?.slice((page - 1) * pageSize, page * pageSize) ?? [];
+
+  if (!isAdmin && user?.role === "manager" && !managerSectionEnabled) {
+    return <AppShell eyebrow="Access" title="Manager access required"><EmptyState title="Manager access required" body="The administrator has deactivated the manager section." /></AppShell>;
+  }
 
   async function remove(c: Category) {
     const count = (items ?? []).filter((i) => i.categoryId === c.id).length;

@@ -15,7 +15,7 @@ const demoAccounts: Record<EntryRole, { email: string; password: string; label: 
 };
 
 export function LoginScreen() {
-  const { login, signup, forgotPassword } = useAuth();
+  const { login, signup, forgotPassword, managerSectionEnabled, managerSectionReady } = useAuth();
   const { mode: themeMode, toggle: toggleTheme } = useTheme();
   const [entry, setEntry] = useState<EntryRole>("admin");
   const [mode, setMode] = useState<AuthMode>("login");
@@ -28,12 +28,19 @@ export function LoginScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!managerSectionReady) return;
     const savedRole = localStorage.getItem("stockline-login-role");
     if (savedRole === "admin" || savedRole === "manager" || savedRole === "staff") {
+      if (savedRole === "manager" && !managerSectionEnabled) {
+        localStorage.removeItem("stockline-login-role");
+        setEntry("staff");
+        setRememberRole(false);
+        return;
+      }
       setEntry(savedRole);
       setRememberRole(true);
     }
-  }, []);
+  }, [managerSectionEnabled, managerSectionReady]);
 
   useEffect(() => {
     if (mode === "login") {
@@ -88,6 +95,7 @@ export function LoginScreen() {
   const isDark = themeMode === "dark";
   const isLogin = mode === "login";
   const isSignup = mode === "signup";
+  const sampleRoles: EntryRole[] = managerSectionEnabled ? ["admin", "manager", "staff"] : ["admin", "staff"];
 
   return (
     <main className={`grid min-h-[100svh] ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}>
@@ -226,7 +234,7 @@ export function LoginScreen() {
               <div className={`mt-7 rounded-2xl border px-4 py-4 ${isDark ? "border-white/10 bg-[#1a3c48]/60" : "border-[#dfe4ea] bg-white/70"}`}>
                 <p className={`text-center text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>Choose a sample account</p>
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                  {(["admin", "manager", "staff"] as const).map((role) => (
+                  {sampleRoles.map((role) => (
                     <button
                       key={role}
                       type="button"

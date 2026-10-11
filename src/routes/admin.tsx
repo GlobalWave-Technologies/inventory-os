@@ -54,7 +54,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminOperations() {
   const { section } = Route.useSearch();
-  const { user, isAdmin, portalId } = useAuth();
+  const { user, isAdmin, portalId, managerSectionEnabled } = useAuth();
   const categories = useAccessibleCategories() ?? [];
   const allCategories = useCategories() ?? categories;
   const items = useAccessibleItems() ?? [];
@@ -108,7 +108,7 @@ function AdminOperations() {
   }
 
   if (!user) return null;
-  if ((!isAdmin && user.role === "manager" && !["requests", "transfers", "stocktaking", "returns", "purchasing", "suppliers", "thresholds", "notifications"].includes(section)) || (user.role === "staff" && section !== "requests" && section !== "notifications")) {
+  if ((!isAdmin && user.role === "manager" && (!managerSectionEnabled ? section !== "requests" && section !== "notifications" : !["requests", "transfers", "stocktaking", "returns", "purchasing", "suppliers", "thresholds", "notifications"].includes(section))) || (user.role === "staff" && section !== "requests" && section !== "notifications")) {
     return <AppShell eyebrow="Access" title="Admin access required"><EmptyState title="Admin access required" body="This operational section is available to administrators." /></AppShell>;
   }
 

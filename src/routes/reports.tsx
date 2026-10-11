@@ -20,7 +20,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const formatSubmittedAt = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
 function ReportsPage() {
-  const { user, isAdmin, portalId } = useAuth();
+  const { user, isAdmin, portalId, managerSectionEnabled } = useAuth();
   const categories = useAccessibleCategories();
   const items = useAccessibleItems();
   const reports = useLiveQuery(() => listDailySalesReports(), []) ?? [];
@@ -38,12 +38,14 @@ function ReportsPage() {
   const teamReports = individualReports.filter((report) => report.categoryId === portalId && user?.categoryIds.includes(report.categoryId));
   const branchSubmissions = reports.filter((report) => report.reportType === "branch-summary" && report.categoryId === portalId && user?.categoryIds.includes(report.categoryId));
   const branchSubmissionKeys = new Set(reports.filter((report) => report.reportType === "branch-summary").map((report) => `${report.categoryId}:${report.reportDate}`));
-  const adminTotalsReports = reports.filter((report) => report.reportType === "branch-summary" || !branchSubmissionKeys.has(`${report.categoryId}:${report.reportDate}`));
-  const submitted = reports.some((report) => report.reportDate === reportDate && report.categoryId === selectedCategoryId && (report.submittedBy === user?.id || report.reportType === "branch-summary"));
+  const adminTotalsReports = managerSectionEnabled
+    ? reports.filter((report) => report.reportType === "branch-summary" || !branchSubmissionKeys.has(`${report.categoryId}:${report.reportDate}`))
+    : individualReports;
+  const submitted = reports.some((report) => report.reportDate === reportDate && report.categoryId === selectedCategoryId && (report.submittedBy === user?.id || (managerSectionEnabled && report.reportType === "branch-summary")));
 
-  const summarySourceReports = teamReports.filter((report) => report.reportDate === summaryDate);
+  const summarySourceReports = managerSectionEnabled && user?.role === "manager" ? teamReports.filter((report) => report.reportDate === summaryDate) : [];
   const summaryAlreadySubmitted = branchSubmissions.some((report) => report.reportDate === summaryDate);
-  const visibleReports = isAdmin ? adminTotalsReports : user?.role === "manager" ? teamReports : ownReports;
+  const visibleReports = isAdmin ? adminTotalsReports : user?.role === "manager" && managerSectionEnabled ? teamReports : ownReports;
   const totals = useMemo(() => visibleReports.reduce((sum, report) => ({
     units: sum.units + report.totalUnits,
     revenue: sum.revenue + report.revenue,
@@ -83,7 +85,7 @@ function ReportsPage() {
   }
 
   async function submitSummary() {
-    if (!user || user.role !== "manager" || !portalId) return;
+    if (!user || user.role !== "manager" || !managerSectionEnabled || !portalId) return;
     if (summarySourceReports.length === 0) {
       toast.error("There are no branch reports to submit for that date.");
       return;
@@ -111,7 +113,7 @@ function ReportsPage() {
       <div className="flex flex-col gap-5">
         {isAdmin && <AdminSummary totals={totals} reports={adminTotalsReports.length} />}
         {!isAdmin && <ReportForm categories={categories} categoryItems={categoryItems} categoryId={selectedCategoryId} categoryValue={categoryId} onCategoryChange={selectCategory} reportDate={reportDate} onDateChange={setReportDate} draft={draft} setDraft={setDraft} submitted={submitted} submitting={submitting} onSubmit={() => void submit()} />}
-        {isAdmin ? <AdminReports reports={reports} categories={categories} users={users} /> : user.role === "manager" ? <><ManagerSubmissionPanel reportDate={summaryDate} onDateChange={setSummaryDate} reports={summarySourceReports} submission={branchSubmissions.find((report) => report.reportDate === summaryDate)} categories={categories} users={users} submitting={submittingSummary} onSubmit={() => void submitSummary()} /><ManagerSalesHistory reports={teamReports} categories={categories} users={users} /><ManagerSubmissionHistory reports={branchSubmissions} categories={categories} /></> : <StaffHistory reports={ownReports} categories={categories} />}
+        {isAdmin ? <AdminReports reports={reports} categories={categories} users={users} managerSectionEnabled={managerSectionEnabled} /> : user.role === "manager" && managerSectionEnabled ? <><ManagerSubmissionPanel reportDate={summaryDate} onDateChange={setSummaryDate} reports={summarySourceReports} submission={branchSubmissions.find((report) => report.reportDate === summaryDate)} categories={categories} users={users} submitting={submittingSummary} onSubmit={() => void submitSummary()} /><ManagerSalesHistory reports={teamReports} categories={categories} users={users} /><ManagerSubmissionHistory reports={branchSubmissions} categories={categories} /></> : <StaffHistory reports={ownReports} categories={categories} />}
       </div>
     </AppShell>
   );
@@ -177,11 +179,11 @@ function AdminSummary({ totals, reports }: { totals: { units: number; revenue: n
 
 function Summary({ label, value }: { label: string; value: string }) { return <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5"><p className="label-mono">{label}</p><p className="num mt-3 text-xl font-semibold text-strong">{value}</p></section>; }
 
-function AdminReports({ reports, categories, users }: { reports: Awaited<ReturnType<typeof listDailySalesReports>>; categories: { id: string; name: string }[]; users: { id: string; name: string; role?: User["role"] }[] }) {
+function AdminReports({ reports, categories, users, managerSectionEnabled }: { reports: Awaited<ReturnType<typeof listDailySalesReports>>; categories: { id: string; name: string }[]; users: { id: string; name: string; role?: User["role"] }[]; managerSectionEnabled: boolean }) {
   return (
     <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">
       <div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-aurora-a/15"><TrendingUp className="size-5 text-aurora-a" /></span><div><p className="label-mono">Admin analysis</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">All branch submissions</h2><p className="mt-1 text-sm text-fog/70">Staff reports and manager summaries across every branch.</p></div></div>
-      {reports.length === 0 ? <p className="mt-4 text-sm text-fog/70">No staff or manager reports submitted yet.</p> : <div className="mt-4 flex flex-col gap-3">{reports.map((report) => { const submitter = users.find((user) => user.id === report.submittedBy); const reportKind = report.reportType === "branch-summary" ? "Manager summary" : submitter?.role === "manager" ? "Manager report" : "Staff report"; return <article key={report.id} className="rounded-xl border border-hair bg-panel/40 p-3 transition-colors hover:border-aurora-a/30 sm:p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-medium text-strong">{categories.find((category) => category.id === report.categoryId)?.name ?? "Unknown branch"} · {reportKind} · report date {report.reportDate}</p><p className="label-mono mt-1">Submitted by {submitter?.name ?? "Unknown user"} on {formatSubmittedAt(report.submittedAt)} · {report.totalUnits} units</p>{report.sourceReportIds && <p className="label-mono mt-1">Combined {report.sourceReportIds.length} staff and manager reports</p>}</div><div className="text-left sm:text-right"><p className="num font-semibold text-aurora-a">{money(report.revenue)}</p><p className="label-mono">Revenue · {money(report.profit)} profit</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{report.lines.map((line) => <p key={line.itemId} className="text-xs text-fog/75">{line.itemName}: {line.quantity} sold · {money(line.sellingPrice)} each</p>)}</div><p className="mt-3 flex items-center gap-1.5 text-xs text-amber"><LockKeyhole className="size-3" /> Locked after submission · contact administrator for corrections</p></article>; })}</div>}
+      {reports.length === 0 ? <p className="mt-4 text-sm text-fog/70">No staff or manager reports submitted yet.</p> : <div className="mt-4 flex flex-col gap-3">{reports.map((report) => { const submitter = users.find((user) => user.id === report.submittedBy); const reportKind = report.reportType === "branch-summary" ? "Manager summary" : managerSectionEnabled && submitter?.role === "manager" ? "Manager report" : "Staff report"; return <article key={report.id} className="rounded-xl border border-hair bg-panel/40 p-3 transition-colors hover:border-aurora-a/30 sm:p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-medium text-strong">{categories.find((category) => category.id === report.categoryId)?.name ?? "Unknown branch"} · {reportKind} · report date {report.reportDate}</p><p className="label-mono mt-1">Submitted by {submitter?.name ?? "Unknown user"} on {formatSubmittedAt(report.submittedAt)} · {report.totalUnits} units</p>{report.sourceReportIds && <p className="label-mono mt-1">Combined {report.sourceReportIds.length} staff and manager reports</p>}</div><div className="text-left sm:text-right"><p className="num font-semibold text-aurora-a">{money(report.revenue)}</p><p className="label-mono">Revenue · {money(report.profit)} profit</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{report.lines.map((line) => <p key={line.itemId} className="text-xs text-fog/75">{line.itemName}: {line.quantity} sold · {money(line.sellingPrice)} each</p>)}</div><p className="mt-3 flex items-center gap-1.5 text-xs text-amber"><LockKeyhole className="size-3" /> Locked after submission · contact administrator for corrections</p></article>; })}</div>}
     </section>
   );
 }
