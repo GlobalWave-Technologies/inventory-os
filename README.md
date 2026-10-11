@@ -92,10 +92,6 @@ Responsive layout, desktop-first but usable on mobile.
 
 Clear warning/notice somewhere in the UI (e.g., settings) that data lives in this browser only, with a prominent export/backup option.
 
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://inventary-management-system.lovable.app
-
 ## Demo access
 
 Use either role on the login screen:
@@ -106,14 +102,6 @@ Use either role on the login screen:
 | Manager | `manager@veridian.local` | `Manager1234!` |
 
 Demo accounts and inventory data are stored in the current browser. Manager access is limited to one assigned category. Administrators can create and assign additional Staff and Manager accounts in Settings.
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/81f8bac2-532a-4748-a1b3-9f4c352f26ec).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
