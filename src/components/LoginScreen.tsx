@@ -98,8 +98,8 @@ export function LoginScreen() {
   const sampleRoles: EntryRole[] = managerSectionEnabled ? ["admin", "manager", "staff"] : ["admin", "staff"];
 
   return (
-    <main className={`grid min-h-[100svh] ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}>
-      <section className={`relative overflow-hidden px-4 py-5 sm:px-8 lg:px-10 lg:py-8 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}>
+    <main className={`grid h-[100svh] min-h-[100svh] grid-cols-1 overflow-hidden ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}>
+      <section className={`relative hidden overflow-hidden px-4 py-5 sm:px-8 lg:block lg:px-8 lg:py-6 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(78,205,164,0.16),transparent_26%),radial-gradient(circle_at_80%_90%,rgba(62,153,170,0.12),transparent_30%)]" aria-hidden="true" />
         <div className="relative z-10 flex items-center gap-4">
           <div className="grid size-10 place-items-center rounded-xl bg-[#4ecda4] text-[#021c26] shadow-[0_8px_20px_rgba(78,205,164,0.35)]">
@@ -108,38 +108,28 @@ export function LoginScreen() {
           <div className={`text-2xl font-bold tracking-tight sm:text-3xl ${isDark ? "text-white" : "text-white"}`}>stockline</div>
         </div>
 
-        <div className="relative z-10 mt-12 max-w-xl sm:mt-16 lg:mt-24">
+        <div className="relative z-10 mt-12 max-w-xl sm:mt-16 lg:mt-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#4ecda4] sm:text-[13px]">Inventory operations</p>
-          <h1 className={`mt-6 text-4xl font-semibold leading-[0.9] tracking-[-0.06em] sm:text-5xl lg:text-[5rem] ${isDark ? "text-white" : "text-white"}`}>
+          <h1 className={`mt-5 text-4xl font-semibold leading-[0.9] tracking-[-0.06em] sm:text-5xl lg:text-6xl xl:text-7xl ${isDark ? "text-white" : "text-white"}`}>
             Every location.
             <span className="mt-2 block">One clear view.</span>
           </h1>
 
-          <p className={`mt-6 max-w-lg text-base leading-7 sm:text-xl sm:leading-8 ${isDark ? "text-slate-200/90" : "text-slate-200/90"}`}>
+          <p className={`mt-5 max-w-lg text-base leading-7 sm:text-xl sm:leading-8 lg:text-lg lg:leading-7 ${isDark ? "text-slate-200/90" : "text-slate-200/90"}`}>
             Track stock, review requests and keep each branch in sync.
           </p>
 
-          <div className={`mt-8 max-w-lg rounded-[20px] border p-4 shadow-[0_15px_30px_rgba(8,20,27,0.18)] backdrop-blur-sm sm:mt-10 ${isDark ? "border-white/10 bg-[#123747]/75" : "border-white/10 bg-[#123747]/75"}`}>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
-                <span className="text-base text-slate-200">Head Warehouse</span>
-                <span className="text-right text-base font-medium text-[#4ecda4]">393 units</span>
-              </div>
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
-                <span className="text-base text-slate-200">Accra Store</span>
-                <span className="text-right text-base font-medium text-[#4ecda4]">2 low-stock items</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-base text-slate-200">Kumasi Store</span>
-                <span className="text-right text-base font-medium text-[#4ecda4]">Awaiting approval</span>
-              </div>
+          <div className={`mt-6 max-w-lg rounded-[20px] border p-4 shadow-[0_15px_30px_rgba(8,20,27,0.18)] backdrop-blur-sm ${isDark ? "border-white/10 bg-[#123747]/75" : "border-white/10 bg-[#123747]/75"}`}>
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-white">Know your stock. Trust your next move.</p>
+              <p className="text-sm leading-6 text-slate-200/85">One clearer view helps every location spot what matters and keep the day moving.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={`relative flex min-h-[45vh] items-center justify-center px-4 py-5 sm:px-6 lg:min-h-[100svh] lg:px-8 lg:py-6 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}>
-        <div className="relative w-full max-w-[620px]">
+      <section className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden px-3 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}>
+        <div className="relative flex max-h-full w-full max-w-[620px] flex-col justify-center">
           <button
             type="button"
             onClick={toggleTheme}
@@ -154,23 +144,23 @@ export function LoginScreen() {
             {themeMode === "dark" ? "Light mode" : "Dark mode"}
           </button>
 
-          <div className={`rounded-[28px] border p-5 shadow-[0_24px_56px_rgba(0,0,0,0.16)] sm:p-8 lg:p-10 ${isDark ? "border-white/10 bg-[#103744]" : "border-[#dfe4ea] bg-[#f6f8f9] shadow-[0_24px_56px_rgba(20,35,47,0.06)]"}`}>
+          <div className={`rounded-[24px] border p-3 shadow-[0_24px_56px_rgba(0,0,0,0.16)] sm:p-6 lg:p-8 ${isDark ? "border-white/10 bg-[#103744]" : "border-[#dfe4ea] bg-[#f6f8f9] shadow-[0_24px_56px_rgba(20,35,47,0.06)]"}`}>
             <div className={isDark ? "text-left" : "text-left"}>
               <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] sm:text-[13px] ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Secure workspace</p>
-              <h2 className={`mt-4 text-3xl font-semibold tracking-[-0.06em] sm:text-4xl lg:text-[3.2rem] ${isDark ? "text-white" : "text-[#14232f]"}`}>Sign in to Stockline</h2>
-              <p className={`mt-3 text-base sm:text-lg ${isDark ? "text-slate-200/80" : "text-[#7c8a96]"}`}>Access your assigned inventory and daily operations.</p>
+              <h2 className={`mt-1 text-2xl font-semibold tracking-[-0.06em] sm:mt-3 sm:text-3xl lg:text-[2.5rem] ${isDark ? "text-white" : "text-[#14232f]"}`}>Sign in to Stockline</h2>
+              <p className={`mt-1 text-xs leading-5 sm:mt-2 sm:text-base ${isDark ? "text-slate-200/80" : "text-[#7c8a96]"}`}>Access your assigned inventory and daily operations.</p>
             </div>
 
-            <form onSubmit={submit} className="mt-8 space-y-5">
+            <form onSubmit={submit} className="mt-2 space-y-1.5 sm:mt-5 sm:space-y-4">
               <div>
-                <label className={`mb-2 block text-base font-medium ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Work email</label>
+                <label className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Work email</label>
                 <input
                   required
                   type="email"
                   autoComplete="username"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className={`w-full rounded-xl border px-4 py-4 text-base outline-none transition ${
+                  className={`w-full rounded-xl border px-4 py-2 text-base outline-none transition sm:py-3 ${
                     isDark
                       ? "border-white/10 bg-[#2a4d5a] text-white placeholder:text-slate-200/60 focus:border-[#4ecda4] focus:ring-2 focus:ring-[#4ecda4]/20"
                       : "border-[#d0d8de] bg-white text-[#14232f] placeholder:text-slate-500 focus:border-[#0e8a6b] focus:ring-2 focus:ring-[#0e8a6b]/20"
@@ -180,7 +170,7 @@ export function LoginScreen() {
               </div>
 
               <div>
-                <label className={`mb-2 block text-base font-medium ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Password</label>
+                <label className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Password</label>
                 <div className="relative">
                   <input
                     required
@@ -188,7 +178,7 @@ export function LoginScreen() {
                     autoComplete={isLogin ? "current-password" : "new-password"}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-4 pr-12 text-base outline-none transition ${
+                    className={`w-full rounded-xl border px-4 py-2 pr-12 text-base outline-none transition sm:py-3 ${
                       isDark
                         ? "border-white/10 bg-[#2a4d5a] text-white placeholder:text-slate-200/60 focus:border-[#4ecda4] focus:ring-2 focus:ring-[#4ecda4]/20"
                         : "border-[#d0d8de] bg-white text-[#14232f] placeholder:text-slate-500 focus:border-[#0e8a6b] focus:ring-2 focus:ring-[#0e8a6b]/20"
@@ -219,7 +209,7 @@ export function LoginScreen() {
               <button
                 type="submit"
                 disabled={saving}
-                className={`flex w-full items-center justify-between rounded-xl px-6 py-4 text-left text-lg font-semibold shadow-[0_16px_32px_rgba(13,42,56,0.2)] transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                    className={`flex w-full items-center justify-between rounded-xl px-5 py-2.5 text-left text-base font-semibold shadow-[0_16px_32px_rgba(13,42,56,0.2)] transition disabled:cursor-not-allowed disabled:opacity-70 sm:py-3.5 sm:text-lg ${
                   isDark
                     ? "bg-[#4ecda4] text-[#021c26] hover:bg-[#66d9b6] shadow-[0_16px_32px_rgba(78,205,164,0.25)]"
                     : "bg-[#0d2a38] text-white hover:bg-[#123747]"
@@ -231,9 +221,9 @@ export function LoginScreen() {
             </form>
 
             {isLogin && (
-              <div className={`mt-7 rounded-2xl border px-4 py-4 ${isDark ? "border-white/10 bg-[#1a3c48]/60" : "border-[#dfe4ea] bg-white/70"}`}>
-                <p className={`text-center text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>Choose a sample account</p>
-                <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className={`login-secondary mt-2 rounded-2xl border px-3 py-2 sm:mt-5 sm:py-3 sm:px-4 ${isDark ? "border-white/10 bg-[#1a3c48]/60" : "border-[#dfe4ea] bg-white/70"}`}>
+                <p className={`text-center text-sm sm:text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>Choose a sample account</p>
+                <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-3">
                   {sampleRoles.map((role) => (
                     <button
                       key={role}
@@ -243,7 +233,7 @@ export function LoginScreen() {
                         setEmail(demoAccounts[role].email);
                         setPassword(demoAccounts[role].password);
                       }}
-                      className={`rounded-xl border px-2 py-3 text-sm font-medium transition ${
+                      className={`rounded-xl border px-2 py-2 text-sm font-medium transition ${
                         entry === role
                           ? isDark
                             ? "border-[#4ecda4] bg-[#4ecda4]/10 text-white"
@@ -257,7 +247,7 @@ export function LoginScreen() {
                     </button>
                   ))}
                 </div>
-                <p className={`mt-4 text-center text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>
+                <p className={`mt-1 text-center text-sm sm:mt-3 sm:text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>
                   Preview password: <span className={`font-medium ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Demo123!</span>
                 </p>
               </div>
@@ -270,7 +260,7 @@ export function LoginScreen() {
             )}
 
             {isLogin && (
-              <div className={`mt-7 text-center text-lg ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
+              <div className={`login-secondary mt-2 text-center text-sm sm:mt-4 sm:text-base ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
                 Invited to join? <button type="button" onClick={() => setMode("signup")} className="font-medium underline">Preview account activation</button>
               </div>
             )}

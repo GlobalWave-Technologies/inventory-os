@@ -123,7 +123,7 @@ export function AppShell({
   if (!bootstrapped) {
     return <main className="min-h-screen bg-background p-4 pt-8 sm:p-8"><LoadingPanels count={4} /></main>;
   }
-  if (!isAdmin && !portalId) return <PortalPicker />;
+  if (!isAdmin && !portalId && user.categoryIds.length > 0) return <PortalPicker />;
   const visibleNav = isAdmin
     ? adminNavigation.map((entry) => {
         const badge = entry.section === "requests" ? operationCounts?.requests ?? 0 : entry.section === "notifications" ? operationCounts?.alerts ?? 0 : undefined;

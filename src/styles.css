@@ -218,6 +218,12 @@
   animation: aurora 16s ease-in-out infinite;
 }
 
+@media (max-width: 639px) and (max-height: 620px) {
+  .login-secondary {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
