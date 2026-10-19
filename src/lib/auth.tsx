@@ -1,55 +1,62 @@
-import { useLiveQuery } from "dexie-react-hooks";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  authenticate,
-  db,
-  ensureDefaultAdmin,
-  ensureDefaultManager,
-  ensureDefaultStaff,
-  getUser,
-  getManagerSectionEnabled,
-  logPortalAccess,
-  registerUser,
-  resetPassword,
-  seedIfEmpty,
-  type User,
-  setManagerSectionEnabled as saveManagerSectionEnabled,
-} from "./db";
+import { ApiError, apiPost, apiRequest, clearTokens, hasRefreshToken, saveTokens } from "./api";
+import type { User } from "./db";
 
 const SESSION_KEY = "stockline-session";
-const SESSION_DURATION_MS = 3 * 60 * 1000;
 
-type StoredSession = { userId: string; expiresAt: number; portalId?: string };
+export type Branch = { id: string; name: string };
+export type SessionUser = User & {
+  branches: Branch[];
+  branchIds: string[];
+  managersEnabled: boolean;
+};
 
-function readSession(): string | null {
+type ApiMe = Partial<SessionUser> & {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: Partial<SessionUser>;
+};
+
+type StoredSession = { branchId?: string };
+
+function readSelectedBranch(): string | null {
   try {
-    const cookie = document.cookie
-      .split("; ")
-      .find((entry) => entry.startsWith(`${SESSION_KEY}=`));
-    if (!cookie) return null;
-    const raw = decodeURIComponent(cookie.slice(SESSION_KEY.length + 1));
-    const session = JSON.parse(raw) as StoredSession | null;
-    if (!session || session.expiresAt <= Date.now()) {
-      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
-      return null;
-    }
-    return session.userId;
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? ((JSON.parse(raw) as StoredSession).branchId ?? null) : null;
   } catch {
-    document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
+    sessionStorage.removeItem(SESSION_KEY);
     return null;
   }
 }
 
-function storeSession(userId: string, portalId?: string) {
-  const session: StoredSession = { userId, expiresAt: Date.now() + SESSION_DURATION_MS, portalId };
-  document.cookie = `${SESSION_KEY}=${encodeURIComponent(JSON.stringify(session))}; path=/; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}; SameSite=Lax; Secure`;
+function storeSelectedBranch(branchId: string | null) {
+  if (branchId) sessionStorage.setItem(SESSION_KEY, JSON.stringify({ branchId }));
+  else sessionStorage.removeItem(SESSION_KEY);
+}
+
+function normalizeMe(payload: ApiMe): SessionUser {
+  const source = payload.user ?? payload;
+  const branches = source.branches ?? [];
+  const branchIds = source.branchIds ?? branches.map((branch) => branch.id);
+  return {
+    ...source,
+    id: source.id ?? "",
+    name: source.name ?? "",
+    email: source.email ?? "",
+    role: source.role ?? "staff",
+    categoryIds: [],
+    createdAt: source.createdAt ?? "",
+    branches,
+    branchIds,
+    managersEnabled: source.managersEnabled ?? false,
+  } as SessionUser;
 }
 
 type AuthValue = {
-  user: User | null | undefined;
-  login: (email: string, password: string, role: User["role"]) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
-  forgotPassword: (email: string, password: string) => Promise<boolean>;
+  user: SessionUser | null | undefined;
+  login: (email: string, password: string) => Promise<boolean>;
+  activateAccount: (token: string, password: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
   portalId: string | null;
@@ -58,135 +65,126 @@ type AuthValue = {
   managerSectionEnabled: boolean;
   managerSectionReady: boolean;
   setManagerSectionEnabled: (enabled: boolean) => Promise<void>;
+  changePassword: (currentPassword: string, nextPassword: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
   const [portalId, setPortalId] = useState<string | null>(null);
+  const [managerSectionReady, setManagerSectionReady] = useState(false);
 
   useEffect(() => {
-    void ensureDefaultAdmin().then(seedIfEmpty).then(ensureDefaultManager).then(ensureDefaultStaff).finally(() => {
-      const sessionId = readSession();
-      const cookie = document.cookie
-        .split("; ")
-        .find((entry) => entry.startsWith(`${SESSION_KEY}=`));
-      const session = cookie ? JSON.parse(decodeURIComponent(cookie.slice(SESSION_KEY.length + 1))) as StoredSession | null : null;
-      setUserId(sessionId);
-      setPortalId(session?.portalId ?? null);
-      setReady(true);
-    });
+    setPortalId(readSelectedBranch());
+    if (!hasRefreshToken()) {
+      setUser(null);
+      setManagerSectionReady(true);
+      return;
+    }
+
+    void apiRequest<ApiMe>("/me")
+      .then((result) => {
+        const nextUser = normalizeMe(result);
+        setUser(nextUser);
+        setManagerSectionReady(true);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) {
+          clearTokens();
+          storeSelectedBranch(null);
+          setPortalId(null);
+        }
+        setUser(null);
+        setManagerSectionReady(true);
+      });
   }, []);
 
-  const liveUser = useLiveQuery(() => (userId ? getUser(userId) : undefined), [userId]);
-  const managerSectionEnabled = useLiveQuery(() => (ready ? getManagerSectionEnabled() : undefined), [ready]);
-
   useEffect(() => {
-    if (ready && userId && liveUser === undefined) return;
-    if (ready && userId && !liveUser) {
-      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
-      setUserId(null);
-    }
-  }, [ready, userId, liveUser]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const refreshSession = () => {
-      const next = { userId, expiresAt: Date.now() + SESSION_DURATION_MS, portalId: portalId ?? undefined };
-      document.cookie = `${SESSION_KEY}=${encodeURIComponent(JSON.stringify(next))}; path=/; Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}; SameSite=Lax; Secure`;
-    };
-
-    const handleInactivity = () => {
-      const sessionId = readSession();
-      if (!sessionId) {
-        setUserId(null);
-        setPortalId(null);
-        return;
-      }
-      refreshSession();
-    };
-
-    refreshSession();
-
-    const timeoutId = window.setTimeout(() => {
-      document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
-      setUserId(null);
+    const expireSession = () => {
+      clearTokens();
+      storeSelectedBranch(null);
       setPortalId(null);
-    }, SESSION_DURATION_MS);
-
-    const events = ["pointerdown", "keydown", "touchstart", "scroll", "mousemove"] as const;
-    events.forEach((eventName) => window.addEventListener(eventName, handleInactivity, { passive: true }));
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      events.forEach((eventName) => window.removeEventListener(eventName, handleInactivity));
+      setUser(null);
     };
-  }, [userId, portalId]);
-
-  // Dexie live queries update this immediately after an admin changes assignments.
-  // A revoked worker is returned to the portal picker before any more scoped views render.
-  useEffect(() => {
-    if (liveUser && liveUser.role !== "admin" && portalId && !liveUser.categoryIds.includes(portalId)) {
-      void logPortalAccess(liveUser.id, portalId, false);
-      storeSession(liveUser.id);
-      setPortalId(null);
-    }
-  }, [liveUser, portalId]);
+    window.addEventListener("stockline:session-expired", expireSession);
+    return () => window.removeEventListener("stockline:session-expired", expireSession);
+  }, []);
 
   const value = useMemo<AuthValue>(
     () => ({
-      user: ready ? (userId ? liveUser : null) : undefined,
-      isAdmin: liveUser?.role === "admin",
-      managerSectionEnabled: managerSectionEnabled ?? false,
-      managerSectionReady: managerSectionEnabled !== undefined,
+      user,
+      isAdmin: user?.role === "admin",
+      managerSectionEnabled: user?.managersEnabled ?? false,
+      managerSectionReady,
       setManagerSectionEnabled: async (enabled) => {
-        if (liveUser?.role !== "admin") throw new Error("Only administrators can change manager access.");
-        await saveManagerSectionEnabled(enabled);
+        if (user?.role !== "admin")
+          throw new Error("Only administrators can change manager access.");
+        await apiRequest("/settings", {
+          method: "PATCH",
+          body: JSON.stringify({ managersEnabled: enabled }),
+        });
+        const refreshed = normalizeMe(await apiRequest<ApiMe>("/me"));
+        setUser(refreshed);
       },
       portalId,
-      login: async (email, password, role) => {
-        const user = await authenticate(email, password, role);
-        if (!user || user.role !== role) return false;
-        storeSession(user.id);
-        setUserId(user.id);
+      login: async (email, password) => {
+        const tokens = await apiPost<ApiMe>("/auth/login", { email, password });
+        if (!tokens.accessToken || !tokens.refreshToken)
+          throw new Error("The server did not return a valid session.");
+        saveTokens(tokens.accessToken, tokens.refreshToken);
+        const nextUser = normalizeMe(await apiRequest<ApiMe>("/me"));
+        setUser(nextUser);
+        setManagerSectionReady(true);
+        storeSelectedBranch(null);
         setPortalId(null);
         return true;
       },
-      signup: async (name, email, password) => {
-        try {
-          const user = await registerUser({ name, email, password });
-          storeSession(user.id);
-          setUserId(user.id);
-          return true;
-        } catch {
-          return false;
-        }
+      activateAccount: async (token, password) => {
+        await apiPost("/auth/activate", { token, password });
       },
-      forgotPassword: (email, password) => resetPassword(email, password),
+      resetPassword: async (token, password) => {
+        await apiPost("/auth/reset-password", { token, password });
+      },
       logout: () => {
-        document.cookie = `${SESSION_KEY}=; Max-Age=0; path=/; SameSite=Lax; Secure`;
-        setUserId(null);
+        const refreshToken = sessionStorage.getItem("stockline-refresh-token");
+        if (refreshToken) void apiPost("/auth/logout", { refreshToken }).catch(() => undefined);
+        clearTokens();
+        storeSelectedBranch(null);
+        setUser(null);
         setPortalId(null);
       },
       selectPortal: async (nextPortalId) => {
-        if (!liveUser) return false;
-        const allowed = liveUser.role === "admin" || liveUser.categoryIds.includes(nextPortalId);
-        await logPortalAccess(liveUser.id, nextPortalId, allowed);
+        if (!user) return false;
+        const allowed = user.role === "admin" || user.branchIds.includes(nextPortalId);
         if (!allowed) return false;
-        storeSession(liveUser.id, nextPortalId);
+        storeSelectedBranch(nextPortalId);
         setPortalId(nextPortalId);
         return true;
       },
       clearPortal: () => {
-        if (!liveUser) return;
-        storeSession(liveUser.id);
+        storeSelectedBranch(null);
         setPortalId(null);
       },
+      changePassword: async (currentPassword, nextPassword) => {
+        if (!user) throw new Error("Sign in before changing your password.");
+        await apiRequest("/me/password", {
+          method: "POST",
+          body: JSON.stringify({ currentPassword, newPassword: nextPassword }),
+        });
+        const email = user.email;
+        clearTokens();
+        setUser(null);
+        await apiPost("/auth/login", { email, password: nextPassword }).then((tokens) => {
+          const session = tokens as ApiMe;
+          if (!session.accessToken || !session.refreshToken)
+            throw new Error("The server did not return a valid session.");
+          saveTokens(session.accessToken, session.refreshToken);
+        });
+        setUser(normalizeMe(await apiRequest<ApiMe>("/me")));
+      },
     }),
-    [ready, userId, liveUser, portalId, managerSectionEnabled],
+    [user, portalId, managerSectionReady],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

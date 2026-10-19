@@ -1,134 +1,88 @@
 import { Eye, EyeOff, Menu, Moon, Sun } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import type { User } from "@/lib/db";
-
-type AuthMode = "login" | "signup" | "forgot";
-type EntryRole = User["role"];
-
-const demoAccounts: Record<EntryRole, { email: string; password: string; label: string }> = {
-  admin: { email: "name@stockline.demo", password: "Demo123!", label: "General Admin" },
-  manager: { email: "name@stockline.demo", password: "Demo123!", label: "Manager" },
-  staff: { email: "name@stockline.demo", password: "Demo123!", label: "Staff" },
-};
 
 export function LoginScreen() {
-  const { login, signup, forgotPassword, managerSectionEnabled, managerSectionReady } = useAuth();
+  const { login } = useAuth();
   const { mode: themeMode, toggle: toggleTheme } = useTheme();
-  const [entry, setEntry] = useState<EntryRole>("admin");
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState(demoAccounts.admin.email);
-  const [password, setPassword] = useState(demoAccounts.admin.password);
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberRole, setRememberRole] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!managerSectionReady) return;
-    const savedRole = localStorage.getItem("stockline-login-role");
-    if (savedRole === "admin" || savedRole === "manager" || savedRole === "staff") {
-      if (savedRole === "manager" && !managerSectionEnabled) {
-        localStorage.removeItem("stockline-login-role");
-        setEntry("staff");
-        setRememberRole(false);
-        return;
-      }
-      setEntry(savedRole);
-      setRememberRole(true);
-    }
-  }, [managerSectionEnabled, managerSectionReady]);
-
-  useEffect(() => {
-    if (mode === "login") {
-      setEmail(demoAccounts[entry].email);
-      setPassword(demoAccounts[entry].password);
-    }
-  }, [entry, mode]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
     try {
-      if (mode === "login") {
-        const ok = await login(email, password, entry ?? "staff");
-        if (!ok) {
-          toast.error(`Incorrect ${entry ?? "staff"} email or password.`);
-          return;
-        }
-        if (rememberRole) localStorage.setItem("stockline-login-role", entry);
-        else localStorage.removeItem("stockline-login-role");
-        return;
-      }
-
-      if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-        toast.error("Use a stronger password: 12+ chars with upper/lowercase, a number, and a symbol.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        toast.error("The passwords do not match.");
-        return;
-      }
-
-      if (mode === "signup") {
-        const ok = await signup(name, email, password);
-        if (!ok) toast.error("An account with this email already exists.");
-      } else {
-        const ok = await forgotPassword(email, password);
-        if (ok) {
-          toast.success("Password updated. You can sign in now.");
-          setMode("login");
-          setPassword("");
-          setConfirmPassword("");
-        } else {
-          toast.error("No account was found for that email.");
-        }
-      }
+      await login(email, password);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to sign in.");
     } finally {
       setSaving(false);
     }
   }
 
   const isDark = themeMode === "dark";
-  const isLogin = mode === "login";
-  const isSignup = mode === "signup";
-  const sampleRoles: EntryRole[] = managerSectionEnabled ? ["admin", "manager", "staff"] : ["admin", "staff"];
 
   return (
-    <main className={`grid h-[100svh] min-h-[100svh] grid-cols-1 overflow-hidden ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}>
-      <section className={`relative hidden overflow-hidden px-4 py-5 sm:px-8 lg:block lg:px-8 lg:py-6 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(78,205,164,0.16),transparent_26%),radial-gradient(circle_at_80%_90%,rgba(62,153,170,0.12),transparent_30%)]" aria-hidden="true" />
+    <main
+      className={`grid h-[100svh] min-h-[100svh] grid-cols-1 overflow-hidden ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}
+    >
+      <section
+        className={`relative hidden overflow-hidden px-4 py-5 sm:px-8 lg:block lg:px-8 lg:py-6 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}
+      >
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(78,205,164,0.16),transparent_26%),radial-gradient(circle_at_80%_90%,rgba(62,153,170,0.12),transparent_30%)]"
+          aria-hidden="true"
+        />
         <div className="relative z-10 flex items-center gap-4">
           <div className="grid size-10 place-items-center rounded-xl bg-[#4ecda4] text-[#021c26] shadow-[0_8px_20px_rgba(78,205,164,0.35)]">
             <Menu className="size-5" />
           </div>
-          <div className={`text-2xl font-bold tracking-tight sm:text-3xl ${isDark ? "text-white" : "text-white"}`}>stockline</div>
+          <div
+            className={`text-2xl font-bold tracking-tight sm:text-3xl ${isDark ? "text-white" : "text-white"}`}
+          >
+            stockline
+          </div>
         </div>
 
         <div className="relative z-10 mt-12 max-w-xl sm:mt-16 lg:mt-12">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#4ecda4] sm:text-[13px]">Inventory operations</p>
-          <h1 className={`mt-5 text-4xl font-semibold leading-[0.9] tracking-[-0.06em] sm:text-5xl lg:text-6xl xl:text-7xl ${isDark ? "text-white" : "text-white"}`}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#4ecda4] sm:text-[13px]">
+            Inventory operations
+          </p>
+          <h1
+            className={`mt-5 text-4xl font-semibold leading-[0.9] tracking-[-0.06em] sm:text-5xl lg:text-6xl xl:text-7xl ${isDark ? "text-white" : "text-white"}`}
+          >
             Every location.
             <span className="mt-2 block">One clear view.</span>
           </h1>
 
-          <p className={`mt-5 max-w-lg text-base leading-7 sm:text-xl sm:leading-8 lg:text-lg lg:leading-7 ${isDark ? "text-slate-200/90" : "text-slate-200/90"}`}>
+          <p
+            className={`mt-5 max-w-lg text-base leading-7 sm:text-xl sm:leading-8 lg:text-lg lg:leading-7 ${isDark ? "text-slate-200/90" : "text-slate-200/90"}`}
+          >
             Track stock, review requests and keep each branch in sync.
           </p>
 
-          <div className={`mt-6 max-w-lg rounded-[20px] border p-4 shadow-[0_15px_30px_rgba(8,20,27,0.18)] backdrop-blur-sm ${isDark ? "border-white/10 bg-[#123747]/75" : "border-white/10 bg-[#123747]/75"}`}>
+          <div
+            className={`mt-6 max-w-lg rounded-[20px] border p-4 shadow-[0_15px_30px_rgba(8,20,27,0.18)] backdrop-blur-sm ${isDark ? "border-white/10 bg-[#123747]/75" : "border-white/10 bg-[#123747]/75"}`}
+          >
             <div className="space-y-2">
-              <p className="text-lg font-semibold text-white">Know your stock. Trust your next move.</p>
-              <p className="text-sm leading-6 text-slate-200/85">One clearer view helps every location spot what matters and keep the day moving.</p>
+              <p className="text-lg font-semibold text-white">
+                Know your stock. Trust your next move.
+              </p>
+              <p className="text-sm leading-6 text-slate-200/85">
+                One clearer view helps every location spot what matters and keep the day moving.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden px-3 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}>
+      <section
+        className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden px-3 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}
+      >
         <div className="relative flex max-h-full w-full max-w-[620px] flex-col justify-center">
           <button
             type="button"
@@ -144,16 +98,34 @@ export function LoginScreen() {
             {themeMode === "dark" ? "Light mode" : "Dark mode"}
           </button>
 
-          <div className={`rounded-[24px] border p-3 shadow-[0_24px_56px_rgba(0,0,0,0.16)] sm:p-6 lg:p-8 ${isDark ? "border-white/10 bg-[#103744]" : "border-[#dfe4ea] bg-[#f6f8f9] shadow-[0_24px_56px_rgba(20,35,47,0.06)]"}`}>
+          <div
+            className={`rounded-[24px] border p-3 shadow-[0_24px_56px_rgba(0,0,0,0.16)] sm:p-6 lg:p-8 ${isDark ? "border-white/10 bg-[#103744]" : "border-[#dfe4ea] bg-[#f6f8f9] shadow-[0_24px_56px_rgba(20,35,47,0.06)]"}`}
+          >
             <div className={isDark ? "text-left" : "text-left"}>
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] sm:text-[13px] ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Secure workspace</p>
-              <h2 className={`mt-1 text-2xl font-semibold tracking-[-0.06em] sm:mt-3 sm:text-3xl lg:text-[2.5rem] ${isDark ? "text-white" : "text-[#14232f]"}`}>Sign in to Stockline</h2>
-              <p className={`mt-1 text-xs leading-5 sm:mt-2 sm:text-base ${isDark ? "text-slate-200/80" : "text-[#7c8a96]"}`}>Access your assigned inventory and daily operations.</p>
+              <p
+                className={`text-[11px] font-semibold uppercase tracking-[0.24em] sm:text-[13px] ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}
+              >
+                Secure workspace
+              </p>
+              <h2
+                className={`mt-1 text-2xl font-semibold tracking-[-0.06em] sm:mt-3 sm:text-3xl lg:text-[2.5rem] ${isDark ? "text-white" : "text-[#14232f]"}`}
+              >
+                Sign in to Stockline
+              </h2>
+              <p
+                className={`mt-1 text-xs leading-5 sm:mt-2 sm:text-base ${isDark ? "text-slate-200/80" : "text-[#7c8a96]"}`}
+              >
+                Access your assigned inventory and daily operations.
+              </p>
             </div>
 
             <form onSubmit={submit} className="mt-2 space-y-1.5 sm:mt-5 sm:space-y-4">
               <div>
-                <label className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Work email</label>
+                <label
+                  className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}
+                >
+                  Work email
+                </label>
                 <input
                   required
                   type="email"
@@ -170,12 +142,16 @@ export function LoginScreen() {
               </div>
 
               <div>
-                <label className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}>Password</label>
+                <label
+                  className={`mb-1 block text-sm font-medium sm:text-base ${isDark ? "text-white/90" : "text-[#3f4d5d]"}`}
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     required
                     type={showPassword ? "text" : "password"}
-                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     className={`w-full rounded-xl border px-4 py-2 pr-12 text-base outline-none transition sm:py-3 ${
@@ -190,7 +166,9 @@ export function LoginScreen() {
                     onClick={() => setShowPassword((shown) => !shown)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     className={`absolute right-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full transition ${
-                      isDark ? "text-slate-200/80 hover:bg-white/5" : "text-[#7c8a96] hover:bg-slate-100"
+                      isDark
+                        ? "text-slate-200/80 hover:bg-white/5"
+                        : "text-[#7c8a96] hover:bg-slate-100"
                     }`}
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -198,72 +176,19 @@ export function LoginScreen() {
                 </div>
               </div>
 
-              {isLogin && (
-                <div className="flex items-center justify-end">
-                  <button type="button" onClick={() => setMode("forgot")} className={`text-base font-medium transition hover:underline ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
               <button
                 type="submit"
                 disabled={saving}
-                    className={`flex w-full items-center justify-between rounded-xl px-5 py-2.5 text-left text-base font-semibold shadow-[0_16px_32px_rgba(13,42,56,0.2)] transition disabled:cursor-not-allowed disabled:opacity-70 sm:py-3.5 sm:text-lg ${
+                className={`flex w-full items-center justify-between rounded-xl px-5 py-2.5 text-left text-base font-semibold shadow-[0_16px_32px_rgba(13,42,56,0.2)] transition disabled:cursor-not-allowed disabled:opacity-70 sm:py-3.5 sm:text-lg ${
                   isDark
                     ? "bg-[#4ecda4] text-[#021c26] hover:bg-[#66d9b6] shadow-[0_16px_32px_rgba(78,205,164,0.25)]"
                     : "bg-[#0d2a38] text-white hover:bg-[#123747]"
                 }`}
               >
-                <span>{saving ? "Working..." : isLogin ? "Sign in" : isSignup ? "Create account" : "Update password"}</span>
+                <span>{saving ? "Signing in..." : "Sign in"}</span>
                 <span className="text-xl">→</span>
               </button>
             </form>
-
-            {isLogin && (
-              <div className={`login-secondary mt-2 rounded-2xl border px-3 py-2 sm:mt-5 sm:py-3 sm:px-4 ${isDark ? "border-white/10 bg-[#1a3c48]/60" : "border-[#dfe4ea] bg-white/70"}`}>
-                <p className={`text-center text-sm sm:text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>Choose a sample account</p>
-                <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-3">
-                  {sampleRoles.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => {
-                        setEntry(role);
-                        setEmail(demoAccounts[role].email);
-                        setPassword(demoAccounts[role].password);
-                      }}
-                      className={`rounded-xl border px-2 py-2 text-sm font-medium transition ${
-                        entry === role
-                          ? isDark
-                            ? "border-[#4ecda4] bg-[#4ecda4]/10 text-white"
-                            : "border-[#0e8a6b] bg-[#e7f7f2] text-[#0d2a38]"
-                          : isDark
-                            ? "border-white/10 bg-[#2a4d5a] text-slate-200 hover:border-[#4ecda4]/50"
-                            : "border-[#d0d8de] bg-white text-[#3f4d5d] hover:border-[#9cb8c1]"
-                      }`}
-                    >
-                      {demoAccounts[role].label}
-                    </button>
-                  ))}
-                </div>
-                <p className={`mt-1 text-center text-sm sm:mt-3 sm:text-base ${isDark ? "text-slate-200" : "text-[#546679]"}`}>
-                  Preview password: <span className={`font-medium ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>Demo123!</span>
-                </p>
-              </div>
-            )}
-
-            {!isLogin && (
-              <button type="button" onClick={() => { setMode("login"); setPassword(""); setConfirmPassword(""); }} className={`mt-5 w-full text-center text-base font-medium hover:underline ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
-                Back to sign in
-              </button>
-            )}
-
-            {isLogin && (
-              <div className={`login-secondary mt-2 text-center text-sm sm:mt-4 sm:text-base ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}>
-                Invited to join? <button type="button" onClick={() => setMode("signup")} className="font-medium underline">Preview account activation</button>
-              </div>
-            )}
           </div>
         </div>
       </section>

@@ -7,20 +7,13 @@ import {
   listActivity,
   listCategories,
   listItems,
-  seedIfEmpty,
   type Activity,
   type Category,
   type Item,
 } from "./db";
 
 export function useBootstrap() {
-  const hydrated = useHydrated();
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (!hydrated) return;
-    void seedIfEmpty().finally(() => setReady(true));
-  }, [hydrated]);
-  return ready;
+  return useHydrated();
 }
 
 export function useCategories(): Category[] | undefined {
@@ -36,24 +29,30 @@ export function useItems(): Item[] | undefined {
 /** Data visible to the signed-in user. Staff can only work in assigned categories. */
 export function useAccessibleCategories(): Category[] | undefined {
   const categories = useCategories();
-  const { user, portalId } = useAuth();
-  if (!categories || !user) return categories;
-  if (user.role === "admin") return categories;
-  return categories.filter((category) => user.categoryIds.includes(category.id) && (!portalId || category.id === portalId));
+  return categories;
 }
 
 export function useAccessibleItems(): Item[] | undefined {
   const items = useItems();
   const { user, portalId } = useAuth();
   if (!items || !user) return items;
-  return user.role === "admin" ? items : items.filter((item) => user.categoryIds.includes(item.categoryId) && item.categoryId === portalId);
+  return user.role === "admin"
+    ? items
+    : items.filter(
+        (item) => user.categoryIds.includes(item.categoryId) && item.categoryId === portalId,
+      );
 }
 
 export function useAccessibleActivity(limit = 60): Activity[] | undefined {
   const activity = useActivity(limit);
   const { user, portalId } = useAuth();
   if (!activity || !user) return activity;
-  return user.role === "admin" ? activity : activity.filter((entry) => entry.categoryId === portalId && user.categoryIds.includes(entry.categoryId ?? ""));
+  return user.role === "admin"
+    ? activity
+    : activity.filter(
+        (entry) =>
+          entry.categoryId === portalId && user.categoryIds.includes(entry.categoryId ?? ""),
+      );
 }
 
 export function useActivity(limit = 60): Activity[] | undefined {

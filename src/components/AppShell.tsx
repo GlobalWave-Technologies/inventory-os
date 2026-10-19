@@ -1,6 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Activity, Bell, Boxes, ClipboardCheck, ClipboardList, LayoutDashboard, MapPinned, Moon, MoreHorizontal, Package, PackageSearch, RotateCcw, Settings, ShoppingCart, Sun, Truck, Warehouse, ChartNoAxesCombined, LogOut, Users, ArrowLeftRight, SlidersHorizontal } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  Boxes,
+  ClipboardCheck,
+  ClipboardList,
+  LayoutDashboard,
+  MapPinned,
+  Moon,
+  MoreHorizontal,
+  Package,
+  PackageSearch,
+  RotateCcw,
+  Settings,
+  ShoppingCart,
+  Sun,
+  Truck,
+  Warehouse,
+  ChartNoAxesCombined,
+  LogOut,
+  Users,
+  ArrowLeftRight,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useTheme } from "@/lib/theme";
@@ -11,14 +34,43 @@ import { LoginScreen } from "@/components/LoginScreen";
 import { PortalPicker } from "@/components/PortalPicker";
 import { LoadingPanels } from "@/components/Modal";
 
-type OperationsSection = "requests" | "transfers" | "stocktaking" | "returns" | "purchasing" | "suppliers" | "thresholds" | "notifications";
-type NavigationEntry = { to: "/" | "/items" | "/categories" | "/activity" | "/profit-loss" | "/reports" | "/settings" | "/admin"; label: string; icon: typeof Package; section?: OperationsSection; roles?: readonly ("admin" | "manager" | "staff")[]; badge?: number };
+type OperationsSection =
+  | "requests"
+  | "transfers"
+  | "stocktaking"
+  | "returns"
+  | "purchasing"
+  | "suppliers"
+  | "thresholds"
+  | "notifications";
+type NavigationEntry = {
+  to:
+    | "/"
+    | "/items"
+    | "/categories"
+    | "/activity"
+    | "/profit-loss"
+    | "/reports"
+    | "/settings"
+    | "/admin";
+  label: string;
+  icon: typeof Package;
+  section?: OperationsSection;
+  roles?: readonly ("admin" | "manager" | "staff")[];
+  badge?: number;
+};
 
 const adminNavigation: NavigationEntry[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/items", label: "Inventory", icon: Package },
   { to: "/categories", label: "Products & categories", icon: Boxes },
-  { to: "/admin", section: "requests", label: "Requests & approvals", icon: ClipboardCheck, badge: 0 },
+  {
+    to: "/admin",
+    section: "requests",
+    label: "Requests & approvals",
+    icon: ClipboardCheck,
+    badge: 0,
+  },
   { to: "/admin", section: "transfers", label: "Transfers", icon: ArrowLeftRight },
   { to: "/admin", section: "stocktaking", label: "Stocktaking", icon: ClipboardList },
   { to: "/admin", section: "returns", label: "Sales & returns", icon: RotateCcw },
@@ -36,31 +88,123 @@ const teamNavigation: NavigationEntry[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/items", label: "Inventory", icon: Package },
   { to: "/categories", label: "Products & categories", icon: Boxes, roles: ["manager"] },
-  { to: "/admin", section: "requests", label: "Requests & approvals", icon: ClipboardCheck, roles: ["manager"] },
-  { to: "/admin", section: "transfers", label: "Transfers", icon: ArrowLeftRight, roles: ["manager"] },
-  { to: "/admin", section: "stocktaking", label: "Stocktaking", icon: ClipboardList, roles: ["manager"] },
-  { to: "/admin", section: "returns", label: "Sales & returns", icon: RotateCcw, roles: ["manager"] },
-  { to: "/admin", section: "purchasing", label: "Purchasing", icon: ShoppingCart, roles: ["manager"] },
+  {
+    to: "/admin",
+    section: "requests",
+    label: "Requests & approvals",
+    icon: ClipboardCheck,
+    roles: ["manager"],
+  },
+  {
+    to: "/admin",
+    section: "transfers",
+    label: "Transfers",
+    icon: ArrowLeftRight,
+    roles: ["manager"],
+  },
+  {
+    to: "/admin",
+    section: "stocktaking",
+    label: "Stocktaking",
+    icon: ClipboardList,
+    roles: ["manager"],
+  },
+  {
+    to: "/admin",
+    section: "returns",
+    label: "Sales & returns",
+    icon: RotateCcw,
+    roles: ["manager"],
+  },
+  {
+    to: "/admin",
+    section: "purchasing",
+    label: "Purchasing",
+    icon: ShoppingCart,
+    roles: ["manager"],
+  },
   { to: "/admin", section: "suppliers", label: "Suppliers", icon: Truck, roles: ["manager"] },
-  { to: "/admin", section: "thresholds", label: "Thresholds", icon: SlidersHorizontal, roles: ["manager"] },
+  {
+    to: "/admin",
+    section: "thresholds",
+    label: "Thresholds",
+    icon: SlidersHorizontal,
+    roles: ["manager"],
+  },
   { to: "/profit-loss", label: "Reports", icon: ChartNoAxesCombined, roles: ["manager"] },
   { to: "/activity", label: "Activity log", icon: Activity },
-  { to: "/admin", section: "notifications", label: "Notifications", icon: Bell, roles: ["manager", "staff"] },
+  {
+    to: "/admin",
+    section: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    roles: ["manager", "staff"],
+  },
   { to: "/reports", label: "Daily reports", icon: ClipboardList },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-function WorkspaceLink({ entry, mobile = false, mobileMenu = false, onNavigate }: { entry: NavigationEntry; mobile?: boolean; mobileMenu?: boolean; onNavigate?: () => void }) {
+function WorkspaceLink({
+  entry,
+  mobile = false,
+  mobileMenu = false,
+  onNavigate,
+}: {
+  entry: NavigationEntry;
+  mobile?: boolean;
+  mobileMenu?: boolean;
+  onNavigate?: () => void;
+}) {
   const Icon = entry.icon;
   const className = mobileMenu
     ? "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-fog transition-colors hover:bg-background/70 hover:text-strong"
     : mobile
       ? "flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
       : "group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-slate-200/85 transition-all hover:border-white/10 hover:bg-white/5 hover:text-white";
-  const children = <><Icon className={mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"} /><span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>{mobile ? entry.label.split(" ")[0] : entry.label}</span>{(!mobile || mobileMenu) && entry.badge !== undefined && entry.badge > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-amber/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber">{entry.badge}</span>}</>;
-  const activeClass = mobile ? "!text-aurora-b" : "!border-white/10 bg-nav-active font-medium !text-white shadow-[inset_0_0_20px_-14px_rgba(78,205,164,0.18)]";
-  if (entry.section) return <Link to="/admin" search={{ section: entry.section }} activeOptions={{ exact: false }} onClick={onNavigate} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
-  return <Link to={entry.to} activeOptions={{ exact: entry.to === "/" }} onClick={onNavigate} className={className} activeProps={{ className: activeClass }}>{children}</Link>;
+  const children = (
+    <>
+      <Icon
+        className={
+          mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"
+        }
+      />
+      <span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>
+        {mobile ? entry.label.split(" ")[0] : entry.label}
+      </span>
+      {(!mobile || mobileMenu) && entry.badge !== undefined && entry.badge > 0 && (
+        <span className="grid min-w-5 place-items-center rounded-full bg-amber/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber">
+          {entry.badge}
+        </span>
+      )}
+    </>
+  );
+  const activeClass = mobile
+    ? "!text-aurora-b"
+    : "!border-white/10 bg-nav-active font-medium !text-white shadow-[inset_0_0_20px_-14px_rgba(78,205,164,0.18)]";
+  if (entry.section)
+    return (
+      <Link
+        to="/admin"
+        search={{ section: entry.section }}
+        activeOptions={{ exact: false }}
+        onClick={onNavigate}
+        className={className}
+        activeProps={{ className: activeClass }}
+      >
+        {children}
+      </Link>
+    );
+  return (
+    <Link
+      to={entry.to}
+      activeOptions={{ exact: entry.to === "/" }}
+      onClick={onNavigate}
+      className={className}
+      activeProps={{ className: activeClass }}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function AuroraField() {
@@ -112,26 +256,49 @@ export function AppShell({
       database.branchRequests.where("status").equals("pending").count(),
       database.transfers.toArray(),
       database.purchaseOrders.where("status").equals("ordered").count(),
-      database.items.filter((item) => !item.deletedAt && item.quantity <= item.lowStockThreshold).count(),
+      database.items
+        .filter((item) => !item.deletedAt && item.quantity <= item.lowStockThreshold)
+        .count(),
     ]);
-    const transferAlerts = transfers.filter((transfer) => transfer.status === "pending" || transfer.status === "in-transit" || (transfer.status === "received" && Date.now() - Date.parse(transfer.receivedAt ?? "") < 7 * 24 * 60 * 60 * 1000)).length;
+    const transferAlerts = transfers.filter(
+      (transfer) =>
+        transfer.status === "pending" ||
+        transfer.status === "in-transit" ||
+        (transfer.status === "received" &&
+          Date.now() - Date.parse(transfer.receivedAt ?? "") < 7 * 24 * 60 * 60 * 1000),
+    ).length;
     return { requests, alerts: requests + transferAlerts + orders + lowStock };
   }, []);
 
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
   if (!bootstrapped) {
-    return <main className="min-h-screen bg-background p-4 pt-8 sm:p-8"><LoadingPanels count={4} /></main>;
+    return (
+      <main className="min-h-screen bg-background p-4 pt-8 sm:p-8">
+        <LoadingPanels count={4} />
+      </main>
+    );
   }
-  if (!isAdmin && !portalId && user.categoryIds.length > 0) return <PortalPicker />;
+  if (!isAdmin && !portalId) return <PortalPicker />;
   const visibleNav = isAdmin
     ? adminNavigation.map((entry) => {
-        const badge = entry.section === "requests" ? operationCounts?.requests ?? 0 : entry.section === "notifications" ? operationCounts?.alerts ?? 0 : undefined;
+        const badge =
+          entry.section === "requests"
+            ? (operationCounts?.requests ?? 0)
+            : entry.section === "notifications"
+              ? (operationCounts?.alerts ?? 0)
+              : undefined;
         return badge === undefined ? entry : { ...entry, badge };
       })
-    : teamNavigation.filter((entry) => !entry.roles || (user.role === "manager" && !managerSectionEnabled ? entry.roles.includes("staff") : entry.roles.includes(user.role)));
-    const mobilePrimaryNav = visibleNav.slice(0, 4);
-    const mobileMoreNav = visibleNav.slice(4);
+    : teamNavigation.filter(
+        (entry) =>
+          !entry.roles ||
+          (user.role === "manager" && !managerSectionEnabled
+            ? entry.roles.includes("staff")
+            : entry.roles.includes(user.role)),
+      );
+  const mobilePrimaryNav = visibleNav.slice(0, 4);
+  const mobileMoreNav = visibleNav.slice(4);
 
   return (
     <div className="relative min-h-screen w-full text-fog">
@@ -142,7 +309,11 @@ export function AppShell({
         <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col rounded-[28px] border border-white/10 bg-sidebar p-3 text-white shadow-[0_18px_40px_-26px_rgba(15,46,61,0.45)] lg:flex">
           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/4 px-3 py-3 shadow-sm">
             <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-[#4ECDA4] shadow-lg shadow-black/10">
-              <img src="/inventory-control-logo.svg" alt="Inventory Control" className="size-10 rounded-lg object-contain" />
+              <img
+                src="/inventory-control-logo.svg"
+                alt="Inventory Control"
+                className="size-10 rounded-lg object-contain"
+              />
               <span className="absolute -bottom-1 -right-1 size-2.5 rounded-full border-2 border-sidebar bg-[#4ECDA4]" />
             </span>
             <div className="min-w-0">
@@ -153,13 +324,23 @@ export function AppShell({
 
           <nav className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto [scrollbar-width:thin]">
             <p className="label-mono px-3 pb-2 pt-1 text-slate-300/80">Operations</p>
-            {visibleNav.map((entry, index) => <WorkspaceLink key={`${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} />)}
+            {visibleNav.map((entry, index) => (
+              <WorkspaceLink
+                key={`${entry.to}-${entry.section ?? entry.label}-${index}`}
+                entry={entry}
+              />
+            ))}
           </nav>
 
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/4 p-2 text-left">
             <p className="label-mono text-slate-300/80">Guide template</p>
             <p className="mt-1 text-xs text-slate-200/75">Sample data stays in this browser.</p>
-            <button onClick={logout} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-xs text-slate-200 transition-colors hover:border-rose/50 hover:bg-rose/10 hover:text-white"><LogOut className="size-3.5" /> Sign out</button>
+            <button
+              onClick={logout}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-xs text-slate-200 transition-colors hover:border-rose/50 hover:bg-rose/10 hover:text-white"
+            >
+              <LogOut className="size-3.5" /> Sign out
+            </button>
           </div>
         </aside>
 
@@ -173,7 +354,10 @@ export function AppShell({
             </div>
             <div className="flex w-full min-w-0 max-w-full flex-wrap items-center justify-between justify-self-stretch gap-2 sm:w-auto sm:flex-nowrap sm:justify-self-auto sm:gap-4">
               <ThemeToggle />
-              <span className="hidden text-right sm:block"><span className="block text-xs font-medium text-strong">{user.name}</span><span className="label-mono capitalize">{user.role}</span></span>
+              <span className="hidden text-right sm:block">
+                <span className="block text-xs font-medium text-strong">{user.name}</span>
+                <span className="label-mono capitalize">{user.role}</span>
+              </span>
               {actions}
             </div>
           </header>
@@ -188,24 +372,67 @@ export function AppShell({
         </main>
       </div>
 
-      {mobileMoreOpen && <button type="button" aria-label="Close navigation menu" onClick={() => setMobileMoreOpen(false)} className="fixed inset-0 z-30 bg-black/20 lg:hidden" />}
+      {mobileMoreOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          onClick={() => setMobileMoreOpen(false)}
+          className="fixed inset-0 z-30 bg-black/20 lg:hidden"
+        />
+      )}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-hair bg-panel/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-20px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:hidden">
-        {mobileMoreOpen && <div className="absolute inset-x-3 bottom-full mb-2 flex max-h-[min(70vh,32rem)] flex-col overflow-hidden rounded-2xl border border-hair bg-panel p-2 shadow-2xl">
-          <p className="label-mono px-3 py-2">All sections</p>
-          <div className="min-h-0 overflow-y-auto"><div className="flex flex-col gap-1">{mobileMoreNav.map((entry, index) => <WorkspaceLink key={`more-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobileMenu onNavigate={() => setMobileMoreOpen(false)} />)}</div></div>
-          <div className="mt-2 shrink-0 border-t border-hair px-1 pt-2">
-            <p className="truncate px-2 text-sm font-medium text-strong">{user.name}</p>
-            <div className="mt-1 flex items-center justify-between gap-3 px-2">
-              <span className="label-mono capitalize">{user.role}</span>
-              <button type="button" onClick={() => { setMobileMoreOpen(false); logout(); }} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-rose transition-colors hover:bg-rose/10">
-                <LogOut className="size-4" /> Sign out
-              </button>
+        {mobileMoreOpen && (
+          <div className="absolute inset-x-3 bottom-full mb-2 flex max-h-[min(70vh,32rem)] flex-col overflow-hidden rounded-2xl border border-hair bg-panel p-2 shadow-2xl">
+            <p className="label-mono px-3 py-2">All sections</p>
+            <div className="min-h-0 overflow-y-auto">
+              <div className="flex flex-col gap-1">
+                {mobileMoreNav.map((entry, index) => (
+                  <WorkspaceLink
+                    key={`more-${entry.to}-${entry.section ?? entry.label}-${index}`}
+                    entry={entry}
+                    mobileMenu
+                    onNavigate={() => setMobileMoreOpen(false)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mt-2 shrink-0 border-t border-hair px-1 pt-2">
+              <p className="truncate px-2 text-sm font-medium text-strong">{user.name}</p>
+              <div className="mt-1 flex items-center justify-between gap-3 px-2">
+                <span className="label-mono capitalize">{user.role}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMoreOpen(false);
+                    logout();
+                  }}
+                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-rose transition-colors hover:bg-rose/10"
+                >
+                  <LogOut className="size-4" /> Sign out
+                </button>
+              </div>
             </div>
           </div>
-        </div>}
+        )}
         <div className="mx-auto grid w-full min-w-0 max-w-lg grid-cols-5 gap-1 px-1 pt-1">
-          {mobilePrimaryNav.map((entry, index) => <WorkspaceLink key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`} entry={entry} mobile />)}
-          {mobileMoreNav.length > 0 && <button type="button" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen((open) => !open)} className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2.5 text-[10px] ${mobileMoreOpen ? "text-aurora-a" : "text-fog/70"}`}><MoreHorizontal className="size-[18px]" /><span>More</span></button>}
+          {mobilePrimaryNav.map((entry, index) => (
+            <WorkspaceLink
+              key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`}
+              entry={entry}
+              mobile
+            />
+          ))}
+          {mobileMoreNav.length > 0 && (
+            <button
+              type="button"
+              aria-expanded={mobileMoreOpen}
+              onClick={() => setMobileMoreOpen((open) => !open)}
+              className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2.5 text-[10px] ${mobileMoreOpen ? "text-aurora-a" : "text-fog/70"}`}
+            >
+              <MoreHorizontal className="size-[18px]" />
+              <span>More</span>
+            </button>
+          )}
         </div>
       </nav>
     </div>

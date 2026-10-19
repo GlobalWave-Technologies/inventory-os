@@ -92,16 +92,11 @@ Responsive layout, desktop-first but usable on mobile.
 
 Clear warning/notice somewhere in the UI (e.g., settings) that data lives in this browser only, with a prominent export/backup option.
 
-## Demo access
+## API connection
 
-Use either role on the login screen:
+Authentication uses the inventory API. Set `VITE_API_URL` to the API origin before starting the frontend. The API must allow the frontend origin in `CORS_ORIGINS`.
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Administrator | `admin@veridian.local` | `Admin123!` |
-| Manager | `manager@veridian.local` | `Manager1234!` |
-
-Demo accounts and inventory data are stored in the current browser. Manager access is limited to one assigned category. Administrators can create and assign additional Staff and Manager accounts in Settings.
+Accounts are created by an administrator. Use the activation link issued by the administrator to set an initial password; self-registration and local demo credentials are not available.
 
 ## Development
 
