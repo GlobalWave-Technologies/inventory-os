@@ -1,21 +1,30 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiError, apiPost, apiRequest, clearTokens, hasRefreshToken, saveTokens } from "./api";
-import type { User } from "./db";
+import { ApiError, apiPost, apiRequest, clearTokens, refreshTokens, setAccessToken } from "./api";
+import type { User, UserRole } from "./db";
 
 const SESSION_KEY = "stockline-session";
 
-export type Branch = { id: string; name: string };
+export type Branch = { id: string; name: string; type?: string };
 export type SessionUser = User & {
   branches: Branch[];
   branchIds: string[];
   managersEnabled: boolean;
+  isSuperAdmin: boolean;
+  phone?: string;
 };
 
-type ApiMe = Partial<SessionUser> & {
-  accessToken?: string;
-  refreshToken?: string;
-  user?: Partial<SessionUser>;
+// What GET /me returns once mapResponseKeys has turned snake_case into camelCase.
+type ApiMe = {
+  id?: number | string;
+  email?: string;
+  name?: string;
+  phone?: string | null;
+  role?: "super_admin" | "admin" | "manager" | "staff";
+  managersEnabled?: boolean;
+  locations?: { id: number | string; name: string; type?: string }[];
 };
+
+type ApiLogin = { accessToken?: string };
 
 type StoredSession = { branchId?: string };
 
@@ -34,22 +43,29 @@ function storeSelectedBranch(branchId: string | null) {
   else sessionStorage.removeItem(SESSION_KEY);
 }
 
-function normalizeMe(payload: ApiMe): SessionUser {
-  const source = payload.user ?? payload;
-  const branches = source.branches ?? [];
-  const branchIds = source.branchIds ?? branches.map((branch) => branch.id);
+function normalizeMe(me: ApiMe): SessionUser {
+  // The server calls a branch a "location" and its ids are numbers; the app uses strings.
+  const branches: Branch[] = (me.locations ?? []).map((location) => ({
+    id: String(location.id),
+    name: location.name,
+    type: location.type,
+  }));
+  const isSuperAdmin = me.role === "super_admin";
+  const role: UserRole = me.role === undefined || me.role === "super_admin" ? (isSuperAdmin ? "admin" : "staff") : me.role;
   return {
-    ...source,
-    id: source.id ?? "",
-    name: source.name ?? "",
-    email: source.email ?? "",
-    role: source.role ?? "staff",
+    id: String(me.id ?? ""),
+    name: me.name ?? "",
+    email: me.email ?? "",
+    phone: me.phone ?? undefined,
+    // The screens only know admin / manager / staff; the super admin counts as an admin.
+    role,
+    isSuperAdmin,
     categoryIds: [],
-    createdAt: source.createdAt ?? "",
+    createdAt: "",
     branches,
-    branchIds,
-    managersEnabled: source.managersEnabled ?? false,
-  } as SessionUser;
+    branchIds: branches.map((branch) => branch.id),
+    managersEnabled: me.managersEnabled ?? false,
+  };
 }
 
 type AuthValue = {
@@ -77,16 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setPortalId(readSelectedBranch());
-    if (!hasRefreshToken()) {
-      setUser(null);
-      setManagerSectionReady(true);
-      return;
-    }
 
-    void apiRequest<ApiMe>("/me")
+    // The access token is only in memory, so every page load starts by asking the server
+    // (using the httpOnly cookie) for a fresh one. No cookie means nobody is signed in.
+    void refreshTokens()
+      .then((restored) => (restored ? apiRequest<ApiMe>("/me") : null))
       .then((result) => {
-        const nextUser = normalizeMe(result);
-        setUser(nextUser);
+        setUser(result ? normalizeMe(result) : null);
         setManagerSectionReady(true);
       })
       .catch((error: unknown) => {
@@ -129,10 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       portalId,
       login: async (email, password) => {
-        const tokens = await apiPost<ApiMe>("/auth/login", { email, password });
-        if (!tokens.accessToken || !tokens.refreshToken)
-          throw new Error("The server did not return a valid session.");
-        saveTokens(tokens.accessToken, tokens.refreshToken);
+        const tokens = await apiPost<ApiLogin>("/auth/login", { email, password });
+        if (!tokens.accessToken) throw new Error("The server did not return a valid session.");
+        setAccessToken(tokens.accessToken);
         const nextUser = normalizeMe(await apiRequest<ApiMe>("/me"));
         setUser(nextUser);
         setManagerSectionReady(true);
@@ -147,8 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await apiPost("/auth/reset-password", { token, password });
       },
       logout: () => {
-        const refreshToken = sessionStorage.getItem("stockline-refresh-token");
-        if (refreshToken) void apiPost("/auth/logout", { refreshToken }).catch(() => undefined);
+        // The cookie goes along automatically; the server revokes it and clears it.
+        void apiRequest("/auth/logout", { method: "POST" }).catch(() => undefined);
         clearTokens();
         storeSelectedBranch(null);
         setUser(null);
@@ -175,12 +187,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const email = user.email;
         clearTokens();
         setUser(null);
-        await apiPost("/auth/login", { email, password: nextPassword }).then((tokens) => {
-          const session = tokens as ApiMe;
-          if (!session.accessToken || !session.refreshToken)
-            throw new Error("The server did not return a valid session.");
-          saveTokens(session.accessToken, session.refreshToken);
-        });
+        // The server just ended every session, so sign in again with the new password.
+        const session = await apiPost<ApiLogin>("/auth/login", { email, password: nextPassword });
+        if (!session.accessToken) throw new Error("The server did not return a valid session.");
+        setAccessToken(session.accessToken);
         setUser(normalizeMe(await apiRequest<ApiMe>("/me")));
       },
     }),

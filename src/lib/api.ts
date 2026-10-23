@@ -22,24 +22,23 @@ export class ApiError extends Error {
 }
 
 const API_BASE_URL = (import.meta.env["VITE_API_URL"] ?? "").replace(/\/$/, "");
-const REFRESH_TOKEN_KEY = "stockline-refresh-token";
 
+// The access token lives only in memory. The refresh token lives in an httpOnly cookie
+// set by the server, so no script on the page (including ours) can read it.
 let accessToken: string | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 
-export function saveTokens(nextAccessToken: string, nextRefreshToken: string) {
-  accessToken = nextAccessToken;
-  sessionStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken);
+export function setAccessToken(token: string) {
+  accessToken = token;
 }
 
 export function clearTokens() {
   accessToken = null;
-  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-export function hasRefreshToken() {
-  return sessionStorage.getItem(REFRESH_TOKEN_KEY) !== null;
-}
+// The server rejects cookie-based calls (refresh, logout) without this header,
+// because another website cannot add a custom header to a request it triggers.
+const CSRF_HEADERS = { "X-Requested-With": "fetch" };
 
 function mapResponseKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(mapResponseKeys);
@@ -99,47 +98,44 @@ async function fetchWithAvailabilityRetry(url: string, init: RequestInit) {
   return response;
 }
 
-async function refreshTokens(): Promise<boolean> {
-  if (refreshInFlight) return refreshInFlight;
-
-  refreshInFlight = (async () => {
-    const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) return false;
-
-    try {
-      const response = await fetchWithAvailabilityRetry(`${API_BASE_URL}/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (!response.ok) {
-        if (response.status === 429 || response.status === 503) {
-          throw getError(response, await readPayload(response));
-        }
-        clearTokens();
-        return false;
-      }
-
-      const result = mapResponseKeys(await readPayload(response)) as {
-        accessToken?: string;
-        refreshToken?: string;
-      } | null;
-      if (!result?.accessToken || !result.refreshToken) {
-        clearTokens();
-        return false;
-      }
-
-      saveTokens(result.accessToken, result.refreshToken);
-      return true;
-    } catch (error) {
-      if (error instanceof ApiError && (error.status === 429 || error.status === 503)) throw error;
-      throw error;
+async function doRefresh(): Promise<boolean> {
+  const response = await fetchWithAvailabilityRetry(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: CSRF_HEADERS,
+    credentials: "include",
+  });
+  if (!response.ok) {
+    if (response.status === 429 || response.status === 503) {
+      throw getError(response, await readPayload(response));
     }
-  })().finally(() => {
+    clearTokens();
+    return false;
+  }
+
+  const result = mapResponseKeys(await readPayload(response)) as { accessToken?: string } | null;
+  if (!result?.accessToken) {
+    clearTokens();
+    return false;
+  }
+  setAccessToken(result.accessToken);
+  return true;
+}
+
+// Refresh tokens work once. Two refreshes at the same moment look like token theft to
+// the server and sign the user out everywhere. refreshInFlight covers one tab; the Web
+// Lock makes other open tabs wait their turn too.
+export function refreshTokens(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight;
+  if (!API_BASE_URL) return Promise.resolve(false);
+
+  const run = () => doRefresh();
+  const locked = navigator.locks
+    ? navigator.locks.request("stockline-refresh", run)
+    : run();
+
+  refreshInFlight = locked.finally(() => {
     refreshInFlight = null;
   });
-
   return refreshInFlight;
 }
 
@@ -150,6 +146,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
   const send = () => {
     const headers = new Headers(init.headers);
+    headers.set("X-Requested-With", "fetch");
     if (init.body !== undefined && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
@@ -158,7 +155,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   };
 
   let response = await send();
-  if (response.status === 401) {
+  // A 401 from /auth/* is an answer (wrong password), not an expired session.
+  if (response.status === 401 && !path.startsWith("/auth/")) {
     if (await refreshTokens()) response = await send();
     if (response.status === 401) window.dispatchEvent(new Event("stockline:session-expired"));
   }
