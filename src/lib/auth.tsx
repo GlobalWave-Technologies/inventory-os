@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ApiError, apiPost, apiRequest, clearTokens, refreshTokens, setAccessToken } from "./api";
-import type { User, UserRole } from "./db";
+import { wipeLegacyLocalData, type User, type UserRole } from "./db";
 
 const SESSION_KEY = "stockline-session";
 
@@ -21,7 +21,7 @@ type ApiMe = {
   phone?: string | null;
   role?: "super_admin" | "admin" | "manager" | "staff";
   managersEnabled?: boolean;
-  locations?: { id: number | string; name: string; type?: string }[];
+  locations?: { id: number | string; name: string; type: string }[];
 };
 
 type ApiLogin = { accessToken?: string };
@@ -56,7 +56,7 @@ function normalizeMe(me: ApiMe): SessionUser {
     id: String(me.id ?? ""),
     name: me.name ?? "",
     email: me.email ?? "",
-    phone: me.phone ?? undefined,
+    ...(me.phone ? { phone: me.phone } : {}),
     // The screens only know admin / manager / staff; the super admin counts as an admin.
     role,
     isSuperAdmin,
@@ -93,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setPortalId(readSelectedBranch());
+    void wipeLegacyLocalData();
 
     // The access token is only in memory, so every page load starts by asking the server
     // (using the httpOnly cookie) for a fresh one. No cookie means nobody is signed in.

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { AppShell, GhostButton, PrimaryButton } from "@/components/AppShell";
-import { CategoryForm } from "@/components/CategoryForm";
+import { BranchManager } from "@/components/BranchManager";
 import { useCategories, useItems } from "@/lib/ledger";
 import { clearAll, exportSnapshot, importSnapshot, type Snapshot } from "@/lib/db";
 import { money } from "@/lib/format";
@@ -131,6 +131,7 @@ function SettingsPage() {
           enabled={managerSectionEnabled}
           onChange={setManagerSectionEnabled}
         />
+        <BranchManager />
         <StaffManager />
         <section className="glass rounded-2xl border-amber/30 bg-amber/[0.04] p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -462,7 +463,6 @@ function PasswordManager() {
 function StaffManager() {
   const categories = useCategories() ?? [];
   const users = useLiveQuery(() => db().users.orderBy("createdAt").toArray(), []) ?? [];
-  const [branchFormOpen, setBranchFormOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [name, setName] = useState("");
@@ -523,11 +523,6 @@ function StaffManager() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <GhostButton onClick={() => setBranchFormOpen(true)}>
-            <span className="flex items-center gap-1.5">
-              <Plus className="size-4" /> Create branch
-            </span>
-          </GhostButton>
           <PrimaryButton
             onClick={() => {
               setEditing(null);
@@ -675,11 +670,6 @@ function StaffManager() {
           </div>
         </div>
       </Modal>
-      <CategoryForm
-        open={branchFormOpen}
-        onClose={() => setBranchFormOpen(false)}
-        entityName="branch"
-      />
     </section>
   );
 }

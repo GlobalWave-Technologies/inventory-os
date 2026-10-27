@@ -47,7 +47,8 @@ function mapResponseKeys(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(value).map(([key, entry]) => [
       key.replace(/_([a-z])/g, (_match, letter: string) => letter.toUpperCase()),
-      mapResponseKeys(entry),
+      // A product's "custom" object is keyed by field ids. Those are data, not field names.
+      key === "custom" ? entry : mapResponseKeys(entry),
     ]),
   );
 }

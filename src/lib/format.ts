@@ -42,3 +42,10 @@ export function shortDate(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
+
+/** Formats a cedi amount the server sent as text, such as "750.00". Display only, no arithmetic. */
+export function cedi(value: string | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const n = Number(value);
+  return Number.isFinite(n) ? money(n) : "—";
+}

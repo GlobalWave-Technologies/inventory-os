@@ -1294,5 +1294,18 @@ export async function importSnapshot(snap: Snapshot, mode: "replace" | "merge") 
 
 export async function clearAll() {
   const d = db();
-  await Promise.all([d.categories.clear(), d.items.clear(), d.activity.clear()]);
+  await Promise.all(d.tables.map((table) => table.clear()));
+}
+
+const LEGACY_WIPE_KEY = "stockline-legacy-data-wiped";
+
+/** Runs once per browser: empties the old browser-only test data now that real data lives on the server. */
+export async function wipeLegacyLocalData() {
+  try {
+    if (localStorage.getItem(LEGACY_WIPE_KEY)) return;
+    await clearAll();
+    localStorage.setItem(LEGACY_WIPE_KEY, "1");
+  } catch {
+    // Storage may be blocked. The old data is harmless, so try again next time.
+  }
 }
