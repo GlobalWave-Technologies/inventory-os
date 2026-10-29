@@ -17,7 +17,7 @@ import {
 } from "@/lib/catalog";
 import { errorMessage } from "@/lib/errors";
 import { cedi } from "@/lib/format";
-import { accentVar } from "@/lib/ledger";
+import { accentVar } from "@/lib/accent";
 import { useAuth } from "@/lib/auth";
 import { useSingleFlight } from "@/lib/useSingleFlight";
 

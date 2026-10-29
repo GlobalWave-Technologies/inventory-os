@@ -12,13 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivateRouteImport } from './routes/activate'
 import { Route as ActivityRouteImport } from './routes/activity'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdjustmentsRouteImport } from './routes/adjustments'
 import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as CountsRouteImport } from './routes/counts'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfitLossRouteImport } from './routes/profit-loss'
-import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PurchasingRouteImport } from './routes/purchasing'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SalesRouteImport } from './routes/sales'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TransfersRouteImport } from './routes/transfers'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,9 +39,9 @@ const ActivityRoute = ActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AdjustmentsRoute = AdjustmentsRouteImport.update({
+  id: '/adjustments',
+  path: '/adjustments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesRoute = CategoriesRouteImport.update({
@@ -45,9 +49,19 @@ const CategoriesRoute = CategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CountsRoute = CountsRouteImport.update({
+  id: '/counts',
+  path: '/counts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ItemsRoute = ItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfitLossRoute = ProfitLossRouteImport.update({
@@ -55,9 +69,9 @@ const ProfitLossRoute = ProfitLossRouteImport.update({
   path: '/profit-loss',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
+const PurchasingRoute = PurchasingRouteImport.update({
+  id: '/purchasing',
+  path: '/purchasing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -65,9 +79,19 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesRoute = SalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransfersRoute = TransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -75,38 +99,50 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activate': typeof ActivateRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
+  '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
+  '/counts': typeof CountsRoute
   '/items': typeof ItemsRoute
+  '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
-  '/reports': typeof ReportsRoute
+  '/purchasing': typeof PurchasingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/transfers': typeof TransfersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activate': typeof ActivateRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
+  '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
+  '/counts': typeof CountsRoute
   '/items': typeof ItemsRoute
+  '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
-  '/reports': typeof ReportsRoute
+  '/purchasing': typeof PurchasingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/transfers': typeof TransfersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activate': typeof ActivateRoute
   '/activity': typeof ActivityRoute
-  '/admin': typeof AdminRoute
+  '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
+  '/counts': typeof CountsRoute
   '/items': typeof ItemsRoute
+  '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
-  '/reports': typeof ReportsRoute
+  '/purchasing': typeof PurchasingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/transfers': typeof TransfersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,50 +150,66 @@ export interface FileRouteTypes {
     | '/'
     | '/activate'
     | '/activity'
-    | '/admin'
+    | '/adjustments'
     | '/categories'
+    | '/counts'
     | '/items'
+    | '/notifications'
     | '/profit-loss'
-    | '/reports'
+    | '/purchasing'
     | '/reset-password'
+    | '/sales'
     | '/settings'
+    | '/transfers'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/activate'
     | '/activity'
-    | '/admin'
+    | '/adjustments'
     | '/categories'
+    | '/counts'
     | '/items'
+    | '/notifications'
     | '/profit-loss'
-    | '/reports'
+    | '/purchasing'
     | '/reset-password'
+    | '/sales'
     | '/settings'
+    | '/transfers'
   id:
     | '__root__'
     | '/'
     | '/activate'
     | '/activity'
-    | '/admin'
+    | '/adjustments'
     | '/categories'
+    | '/counts'
     | '/items'
+    | '/notifications'
     | '/profit-loss'
-    | '/reports'
+    | '/purchasing'
     | '/reset-password'
+    | '/sales'
     | '/settings'
+    | '/transfers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivateRoute: typeof ActivateRoute
   ActivityRoute: typeof ActivityRoute
-  AdminRoute: typeof AdminRoute
+  AdjustmentsRoute: typeof AdjustmentsRoute
   CategoriesRoute: typeof CategoriesRoute
+  CountsRoute: typeof CountsRoute
   ItemsRoute: typeof ItemsRoute
+  NotificationsRoute: typeof NotificationsRoute
   ProfitLossRoute: typeof ProfitLossRoute
-  ReportsRoute: typeof ReportsRoute
+  PurchasingRoute: typeof PurchasingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRoute
+  TransfersRoute: typeof TransfersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -183,11 +235,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/adjustments': {
+      id: '/adjustments'
+      path: '/adjustments'
+      fullPath: '/adjustments'
+      preLoaderRoute: typeof AdjustmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories': {
@@ -197,11 +249,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/counts': {
+      id: '/counts'
+      path: '/counts'
+      fullPath: '/counts'
+      preLoaderRoute: typeof CountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/items': {
       id: '/items'
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof ItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profit-loss': {
@@ -211,11 +277,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfitLossRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
+    '/purchasing': {
+      id: '/purchasing'
+      path: '/purchasing'
+      fullPath: '/purchasing'
+      preLoaderRoute: typeof PurchasingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -225,11 +291,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales': {
+      id: '/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof SalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transfers': {
+      id: '/transfers'
+      path: '/transfers'
+      fullPath: '/transfers'
+      preLoaderRoute: typeof TransfersRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -239,13 +319,17 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivateRoute: ActivateRoute,
   ActivityRoute: ActivityRoute,
-  AdminRoute: AdminRoute,
+  AdjustmentsRoute: AdjustmentsRoute,
   CategoriesRoute: CategoriesRoute,
+  CountsRoute: CountsRoute,
   ItemsRoute: ItemsRoute,
+  NotificationsRoute: NotificationsRoute,
   ProfitLossRoute: ProfitLossRoute,
-  ReportsRoute: ReportsRoute,
+  PurchasingRoute: PurchasingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SalesRoute: SalesRoute,
   SettingsRoute: SettingsRoute,
+  TransfersRoute: TransfersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

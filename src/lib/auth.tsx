@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ApiError, apiPost, apiRequest, clearTokens, refreshTokens, setAccessToken } from "./api";
-import { wipeLegacyLocalData, type User, type UserRole } from "./db";
+import { wipeLegacyLocalData } from "./legacy";
+
+export type UserRole = "admin" | "manager" | "staff";
+export type User = { id: string; name: string; email: string; role: UserRole };
 
 const SESSION_KEY = "stockline-session";
 
@@ -60,8 +63,6 @@ function normalizeMe(me: ApiMe): SessionUser {
     // The screens only know admin / manager / staff; the super admin counts as an admin.
     role,
     isSuperAdmin,
-    categoryIds: [],
-    createdAt: "",
     branches,
     branchIds: branches.map((branch) => branch.id),
     managersEnabled: me.managersEnabled ?? false,

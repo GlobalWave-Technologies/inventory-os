@@ -13,7 +13,7 @@ import {
 } from "@/lib/catalog";
 import { errorMessage } from "@/lib/errors";
 import { useSingleFlight } from "@/lib/useSingleFlight";
-import { accentVar } from "@/lib/ledger";
+import { accentVar } from "@/lib/accent";
 
 const accents: CategoryAccent[] = ["a", "b", "c", "amber", "rose"];
 const types: FieldType[] = ["text", "number", "date", "select"];

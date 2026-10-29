@@ -1,191 +1,236 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChartNoAxesCombined, Coins, TrendingDown, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AppShell } from "@/components/AppShell";
-import { LoadingPanels, EmptyState } from "@/components/Modal";
-import { accentVar, useAccessibleCategories } from "@/lib/ledger";
-import { listDailySalesReports } from "@/lib/db";
-import { money } from "@/lib/format";
+import { ChartNoAxesCombined } from "lucide-react";
+import { useState } from "react";
+import { AppShell, GhostButton } from "@/components/AppShell";
+import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { useAuth } from "@/lib/auth";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const CATEGORY_PAGE_SIZE = 5;
-
-type ProfitLossLine = {
-  id: string;
-  name: string;
-  soldQuantity: number;
-  originalPrice: number;
-  sellingPrice: number;
-  cost: number;
-  revenue: number;
-  profit: number;
-};
+import { cedi } from "@/lib/format";
+import { useSalesBreakdown, useSlowMovers, useValuation, type SalesGroupBy, type ValueGroupBy } from "@/lib/reports";
+import { useMyBranches } from "@/lib/sales";
 
 export const Route = createFileRoute("/profit-loss")({
-  head: () => ({ meta: [{ title: "Profit & loss — StockLine Inventory" }] }),
-  component: ProfitLossPage,
+  head: () => ({
+    meta: [
+      { title: "Reports — StockLine Inventory" },
+      { name: "description", content: "Profit and loss, stock value and slow-moving stock." },
+    ],
+  }),
+  component: ReportsPage,
 });
 
-function ProfitLossPage() {
-  const { isAdmin, user, portalId, managerSectionEnabled } = useAuth();
-  const categories = useAccessibleCategories();
-  const salesReports = useLiveQuery(() => listDailySalesReports(), []);
-  const salesReportsForUser = useMemo(
-    () => (salesReports ?? []).filter((salesReport) => salesReport.reportType !== "branch-summary" && (isAdmin || (managerSectionEnabled && user?.role === "manager" && salesReport.categoryId === portalId && user.categoryIds.includes(salesReport.categoryId)))),
-    [salesReports, isAdmin, user, portalId, managerSectionEnabled],
-  );
-  const [categoryPage, setCategoryPage] = useState(1);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("all");
+const isoDay = (date: Date) => date.toISOString().slice(0, 10);
+const daysAgo = (n: number) => isoDay(new Date(Date.now() - n * 86_400_000));
 
-  const report = useMemo(() => {
-    const groups = (categories ?? []).map((category) => {
-      const itemTotals = new Map<string, ProfitLossLine>();
-      for (const salesReport of salesReportsForUser.filter((entry) => entry.categoryId === category.id)) {
-        for (const line of salesReport.lines) {
-          const total = itemTotals.get(line.itemId) ?? { id: line.itemId, name: line.itemName, soldQuantity: 0, originalPrice: 0, sellingPrice: 0, cost: 0, revenue: 0, profit: 0 };
-          total.soldQuantity += line.quantity;
-          total.cost += line.quantity * line.originalPrice;
-          total.revenue += line.quantity * line.sellingPrice;
-          total.originalPrice = total.cost / total.soldQuantity;
-          total.sellingPrice = total.revenue / total.soldQuantity;
-          total.profit = total.revenue - total.cost;
-          itemTotals.set(line.itemId, total);
-        }
-      }
-      const categoryItems = Array.from(itemTotals.values());
-      const original = categoryItems.reduce((sum, item) => sum + item.cost, 0);
-      const revenue = categoryItems.reduce((sum, item) => sum + item.revenue, 0);
-      return { category, items: categoryItems, original, revenue, profit: revenue - original };
-    }).filter((group) => group.items.length > 0);
-    return { groups };
-  }, [categories, salesReportsForUser]);
+type Tab = "sales" | "value" | "slow";
 
-  if (!isAdmin && (user?.role !== "manager" || !managerSectionEnabled)) {
-    return (
-      <AppShell eyebrow="Access" title="Manager access required">
-        <section className="glass rounded-2xl p-5 text-sm text-fog/80">
-          Profit and loss reporting is available to managers and administrators.
-        </section>
-      </AppShell>
-    );
-  }
+function Notice({ children }: { children: string }) {
+  return <p className="rounded-xl border border-amber/30 p-3 text-sm text-amber">{children}</p>;
+}
 
-  if (!categories || !salesReports) {
-    return <AppShell eyebrow="Finance" title="Profit & loss"><LoadingPanels count={3} /></AppShell>;
-  }
-
-  const scopedGroups = isAdmin && selectedCategoryId !== "all"
-    ? report.groups.filter((group) => group.category.id === selectedCategoryId)
-    : report.groups;
-  const scopeOriginal = scopedGroups.reduce((sum, group) => sum + group.original, 0);
-  const scopeRevenue = scopedGroups.reduce((sum, group) => sum + group.revenue, 0);
-  const scopeProfit = scopeRevenue - scopeOriginal;
-  const pageCount = Math.max(1, Math.ceil(scopedGroups.length / CATEGORY_PAGE_SIZE));
-  const visibleGroups = scopedGroups.slice((categoryPage - 1) * CATEGORY_PAGE_SIZE, categoryPage * CATEGORY_PAGE_SIZE);
-  const selectedCategory = categories.find((category) => category.id === selectedCategoryId);
+function ReportsPage() {
+  const { isAdmin, managerSectionEnabled, user } = useAuth();
+  const allowed = isAdmin || (managerSectionEnabled && user?.role === "manager");
+  const branches = useMyBranches();
+  const [tab, setTab] = useState<Tab>("sales");
+  const [branch, setBranch] = useState<number | null>(null);
 
   return (
-    <AppShell eyebrow="Finance" title="Profit & loss">
-      <div className="flex flex-col gap-5">
-        <div><div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="label-mono text-aurora-a">{isAdmin ? selectedCategory ? `${selectedCategory.name} overview` : "General overview" : "Shop overview"}</p><h2 className="mt-1 font-display text-lg font-semibold text-strong">Financial performance</h2></div>{isAdmin && <label className="grid gap-1 text-xs text-fog/70">Scope<select className="field min-w-48" value={selectedCategoryId} onChange={(event) => { setSelectedCategoryId(event.target.value); setCategoryPage(1); }}><option value="all">All branches</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>}</div><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Summary label="Original cost" value={scopeOriginal} icon={<Coins className="size-4" />} />
-          <Summary label="Total revenue" value={scopeRevenue} icon={<ChartNoAxesCombined className="size-4" />} />
-          <Summary label="Sales profit" value={scopeProfit} icon={scopeProfit >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />} tone={scopeProfit >= 0 ? "text-aurora-a" : "text-rose"} />
-        </div></div>
-
-        {scopedGroups.length > 0 && <AnalysisChart data={scopedGroups.map((group) => ({ category: group.category.name, revenue: group.revenue, profit: group.profit }))} />}
-
-        {scopedGroups.length === 0 ? (
-          <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No category data yet" body="Add items with original and sold prices to see profit and loss." />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {visibleGroups.map((group) => (
-              <section key={group.category.id} className="glass overflow-hidden rounded-2xl">
-                <div className="flex flex-col gap-3 border-b border-hair p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: accentVar(group.category.accent) }} />
-                    <div>
-                      <h2 className="font-display text-base font-semibold text-strong">{group.category.name}</h2>
-                      <p className="label-mono mt-0.5">{group.items.length} item{group.items.length === 1 ? "" : "s"}</p>
-                    </div>
-                  </div>
-                  <p className={`num text-lg font-semibold ${group.profit >= 0 ? "text-aurora-a" : "text-rose"}`}>
-                    {money(group.profit)} profit · {money(group.revenue)} revenue
-                  </p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[680px] text-left text-sm">
-                    <thead className="border-b border-hair text-xs text-fog/60">
-                      <tr><th className="px-4 py-3 font-medium sm:px-5">Item</th><th className="px-4 py-3 font-medium">Sold</th><th className="px-4 py-3 font-medium">Original price</th><th className="px-4 py-3 font-medium">Sold price</th><th className="px-4 py-3 font-medium">Revenue</th><th className="px-4 py-3 font-medium sm:px-5">Profit</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-hair/70">
-                      {group.items.map((item) => {
-                        const itemRevenue = item.revenue;
-                        const itemProfit = item.profit;
-                        return <tr key={item.id}><td className="px-4 py-3 text-strong sm:px-5">{item.name}</td><td className="num px-4 py-3">{item.soldQuantity}</td><td className="num px-4 py-3">{money(item.originalPrice)}</td><td className="num px-4 py-3">{money(item.sellingPrice)}</td><td className="num px-4 py-3">{money(itemRevenue)}</td><td className={`num px-4 py-3 sm:px-5 ${itemProfit >= 0 ? "text-aurora-a" : "text-rose"}`}>{money(itemProfit)}</td></tr>;
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+    <AppShell eyebrow="Reports" title="Reports">
+      {!allowed ? (
+        <EmptyState
+          icon={<ChartNoAxesCombined className="size-6" />}
+          title="Reports are for managers and admins"
+          body="Ask an admin if you need access to these numbers."
+        />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {(["sales", "value", "slow"] as const).map((t) => (
+              <GhostButton key={t} onClick={() => setTab(t)} className={tab === t ? "!border-aurora-a/50 !text-strong" : ""}>
+                {t === "sales" ? "Profit & loss" : t === "value" ? "Stock value" : "Slow movers"}
+              </GhostButton>
             ))}
-            {pageCount > 1 && (
-              <div className="flex items-center justify-between border-t border-hair pt-3">
-                <p className="label-mono">Page {categoryPage} of {pageCount}</p>
-                <div className="flex gap-2">
-                  <button type="button" aria-label="Previous category page" disabled={categoryPage === 1} onClick={() => setCategoryPage((page) => Math.max(1, page - 1))} className="grid size-9 place-items-center rounded-lg border border-hair text-fog transition-colors hover:text-strong disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft className="size-4" /></button>
-                  <button type="button" aria-label="Next category page" disabled={categoryPage === pageCount} onClick={() => setCategoryPage((page) => Math.min(pageCount, page + 1))} className="grid size-9 place-items-center rounded-lg border border-hair text-fog transition-colors hover:text-strong disabled:cursor-not-allowed disabled:opacity-40"><ChevronRight className="size-4" /></button>
-                </div>
-              </div>
-            )}
+            <select className="field max-w-[14rem]" value={branch ?? ""} onChange={(e) => setBranch(e.target.value ? Number(e.target.value) : null)}>
+              <option value="">{isAdmin ? "All branches" : "All my branches"}</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-        <p className="text-xs text-fog/60">{isAdmin ? selectedCategory ? `Calculated from submitted sales reports for ${selectedCategory.name}.` : "Calculated from submitted individual sales reports across all branches." : "Calculated from staff and manager sales reports for your assigned branch."}</p>
-      </div>
+          {tab === "sales" && <SalesTab locationId={branch} />}
+          {tab === "value" && <ValueTab locationId={branch} />}
+          {tab === "slow" && <SlowTab locationId={branch} />}
+        </div>
+      )}
     </AppShell>
   );
 }
 
-function AnalysisChart({ data }: { data: Array<{ category: string; revenue: number; profit: number }> }) {
-  if (data.length === 0) return null;
-  const highest = data.reduce((best, current) => current.revenue > best.revenue ? current : best, data[0]!);
-  const lowest = data.reduce((worst, current) => current.revenue < worst.revenue ? current : worst, data[0]!);
-
+function Figure({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <section className="glass rounded-2xl border-aurora-a/20 p-4 sm:p-5">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="label-mono">Analysis</p>
-          <h2 className="mt-1 font-display text-base font-semibold text-strong">Revenue and profit by category</h2>
-        </div>
-        <p className="text-xs text-fog/70">High: {highest.category} · Low: {lowest.category}</p>
-      </div>
-      <div className="mt-5 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-            <CartesianGrid stroke="var(--hair)" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="category" tick={{ fill: "var(--fog)", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fill: "var(--fog)", fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(value: number) => `GH₵${value >= 1000 ? `${Math.round(value / 1000)}k` : value}`} />
-            <Tooltip
-              contentStyle={{ background: "var(--panel)", border: "1px solid var(--hair)", borderRadius: 12, color: "var(--strong)" }}
-              formatter={(value: number, name: string) => [money(value), name === "revenue" ? "Revenue" : "Profit"]}
-            />
-            <Line type="monotone" dataKey="revenue" stroke="var(--aurora-a)" strokeWidth={3} dot={{ r: 4, fill: "var(--aurora-a)" }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="profit" stroke="var(--aurora-b)" strokeWidth={3} dot={{ r: 4, fill: "var(--aurora-b)" }} activeDot={{ r: 6 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-4 text-xs text-fog/75">
-        <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-aurora-a" /> Revenue</span>
-        <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-aurora-b" /> Profit</span>
-      </div>
-    </section>
+    <div className="glass rounded-2xl p-4">
+      <p className="label-mono">{label}</p>
+      <p className={`num mt-2 text-xl font-semibold ${tone ?? "text-strong"}`}>{value}</p>
+    </div>
   );
 }
 
-function Summary({ label, value, icon, tone = "text-aurora-a" }: { label: string; value: number; icon: React.ReactNode; tone?: string }) {
-  return <section className="glass rounded-2xl p-4 sm:p-5"><div className="flex items-center justify-between"><p className="label-mono">{label}</p><span className={`grid size-8 place-items-center rounded-lg bg-aurora-a/10 ${tone}`}>{icon}</span></div><p className={`num mt-3 text-2xl font-semibold ${tone}`}>{money(value)}</p></section>;
+// ---- Profit and loss -------------------------------------------------------------------------
+
+const GROUP_LABEL: Record<SalesGroupBy, string> = {
+  product: "By product",
+  category: "By category",
+  branch: "By branch",
+  staff: "By staff",
+  day: "By day",
+};
+
+function SalesTab({ locationId }: { locationId: number | null }) {
+  const [from, setFrom] = useState(daysAgo(30));
+  const [to, setTo] = useState(isoDay(new Date()));
+  const [groupBy, setGroupBy] = useState<SalesGroupBy>("product");
+  const query = useSalesBreakdown({ from, to, locationId, groupBy, enabled: true });
+  const data = query.data;
+  const badRange = from > to;
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs text-fog/80">
+          From
+          <input className="field" type="date" max={to} value={from} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-fog/80">
+          To
+          <input className="field" type="date" max={isoDay(new Date())} value={to} onChange={(e) => setTo(e.target.value)} />
+        </label>
+        <select className="field max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as SalesGroupBy)}>
+          {(Object.keys(GROUP_LABEL) as SalesGroupBy[]).map((g) => (
+            <option key={g} value={g}>
+              {GROUP_LABEL[g]}
+            </option>
+          ))}
+        </select>
+      </div>
+      {badRange && <Notice>The start date must not be after the end date.</Notice>}
+      {query.isLoading && !badRange && <LoadingPanels count={3} />}
+      {query.isError && <Notice>Could not load the report. The range can be at most one year.</Notice>}
+      {data && (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Figure label="Revenue" value={cedi(data.totals.revenue)} />
+            <Figure label="Refunds" value={cedi(data.totals.refunds)} />
+            <Figure label="Cost" value={cedi(data.totals.cost)} />
+            <Figure label="Profit" value={cedi(data.totals.profit)} tone="text-aurora-a" />
+          </div>
+          <p className="text-xs text-fog/70">
+            {data.totals.unitsSold} units sold, {data.totals.unitsReturned} returned. Cost is for the units that stayed sold.
+          </p>
+          {data.items.length === 0 && (
+            <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No sales in this range" body="Try a wider date range." />
+          )}
+          <div className="flex flex-col gap-2">
+            {data.items.map((row) => (
+              <div key={String(row.key)} className="rounded-2xl border border-hair bg-panel/40 p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-semibold text-strong">{row.label}</p>
+                  <p className="num shrink-0 text-sm font-semibold text-aurora-a">{cedi(row.profit)}</p>
+                </div>
+                <p className="label-mono mt-1">
+                  {row.unitsSold} sold · revenue {cedi(row.netRevenue)} · cost {cedi(row.cost)}
+                  {row.unitsReturned > 0 ? ` · ${row.unitsReturned} returned` : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+          {data.truncated && <p className="text-xs text-fog/70">Showing the top 200 rows. Narrow the dates or branch to see the rest.</p>}
+        </>
+      )}
+    </>
+  );
+}
+
+// ---- Stock value -----------------------------------------------------------------------------
+
+function ValueTab({ locationId }: { locationId: number | null }) {
+  const [groupBy, setGroupBy] = useState<ValueGroupBy>("category");
+  const query = useValuation({ locationId, groupBy, enabled: true });
+  const data = query.data;
+  return (
+    <>
+      <select className="field max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as ValueGroupBy)}>
+        <option value="category">By category</option>
+        <option value="branch">By branch</option>
+        <option value="product">By product</option>
+      </select>
+      {query.isLoading && <LoadingPanels count={3} />}
+      {query.isError && <Notice>Could not load stock value.</Notice>}
+      {data && (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Figure label="Units in stock" value={String(data.totals.units)} />
+            <Figure label="Value at cost" value={cedi(data.totals.costValue)} />
+            <Figure label="Value at price" value={cedi(data.totals.retailValue)} />
+            <Figure label="Potential margin" value={cedi(data.totals.potentialMargin)} tone="text-aurora-a" />
+          </div>
+          <div className="flex flex-col gap-2">
+            {data.items.map((row) => (
+              <div key={String(row.key)} className="rounded-2xl border border-hair bg-panel/40 p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-semibold text-strong">{row.label}</p>
+                  <p className="num shrink-0 text-sm font-semibold text-strong">{cedi(row.costValue)}</p>
+                </div>
+                <p className="label-mono mt-1">
+                  {row.units} units · at price {cedi(row.retailValue)} · margin {cedi(row.potentialMargin)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+// ---- Slow movers -----------------------------------------------------------------------------
+
+function SlowTab({ locationId }: { locationId: number | null }) {
+  const [days, setDays] = useState(30);
+  const query = useSlowMovers({ days, locationId, enabled: true });
+  const items = query.data?.items ?? [];
+  return (
+    <>
+      <select className="field max-w-[14rem]" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+        {[14, 30, 60, 90, 180].map((d) => (
+          <option key={d} value={d}>
+            Not sold in {d} days
+          </option>
+        ))}
+      </select>
+      {query.isLoading && <LoadingPanels count={3} />}
+      {query.isError && <Notice>Could not load slow movers.</Notice>}
+      {query.data && items.length === 0 && (
+        <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="Nothing is stuck" body="Everything in stock has sold recently." />
+      )}
+      <div className="flex flex-col gap-2">
+        {items.map((row) => (
+          <div key={`${row.locationId}-${row.productId}`} className="rounded-2xl border border-hair bg-panel/40 p-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-strong">{row.productName}</p>
+                <p className="label-mono mt-0.5">{row.locationName}</p>
+              </div>
+              <div className="text-right">
+                <p className="num text-sm font-semibold text-strong">{row.quantity} units</p>
+                <p className="label-mono">{cedi(row.costValue)} tied up</p>
+              </div>
+            </div>
+            <p className="label-mono mt-1">{row.lastSold ? `Last sold ${row.lastSold}` : "Never sold"}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }

@@ -25,37 +25,30 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { useTheme } from "@/lib/theme";
-import { useBootstrap } from "@/lib/ledger";
+import { useHydrated } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { useDashboard, useScopeLocationId, useUnreadCount } from "@/lib/overview";
 import { LoginScreen } from "@/components/LoginScreen";
 import { PortalPicker } from "@/components/PortalPicker";
 import { LoadingPanels } from "@/components/Modal";
 
-type OperationsSection =
-  | "requests"
-  | "transfers"
-  | "stocktaking"
-  | "returns"
-  | "purchasing"
-  | "suppliers"
-  | "thresholds"
-  | "notifications";
 type NavigationEntry = {
   to:
     | "/"
     | "/items"
+    | "/adjustments"
+    | "/transfers"
+    | "/notifications"
+    | "/sales"
+    | "/counts"
+    | "/purchasing"
     | "/categories"
     | "/activity"
     | "/profit-loss"
-    | "/reports"
-    | "/settings"
-    | "/admin";
+    | "/settings";
   label: string;
   icon: typeof Package;
-  section?: OperationsSection;
   roles?: readonly ("admin" | "manager" | "staff")[];
   badge?: number;
 };
@@ -63,84 +56,31 @@ type NavigationEntry = {
 const adminNavigation: NavigationEntry[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/items", label: "Inventory", icon: Package },
+  { to: "/adjustments", label: "Adjustments", icon: SlidersHorizontal },
   { to: "/categories", label: "Products & categories", icon: Boxes },
-  {
-    to: "/admin",
-    section: "requests",
-    label: "Requests & approvals",
-    icon: ClipboardCheck,
-    badge: 0,
-  },
-  { to: "/admin", section: "transfers", label: "Transfers", icon: ArrowLeftRight },
-  { to: "/admin", section: "stocktaking", label: "Stocktaking", icon: ClipboardList },
-  { to: "/admin", section: "returns", label: "Sales & returns", icon: RotateCcw },
-  { to: "/admin", section: "purchasing", label: "Purchasing", icon: ShoppingCart },
-  { to: "/admin", section: "suppliers", label: "Suppliers", icon: Truck },
-  { to: "/admin", section: "thresholds", label: "Thresholds", icon: SlidersHorizontal },
+  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+  { to: "/counts", label: "Stocktaking", icon: ClipboardList },
+  { to: "/sales", label: "Sales & returns", icon: RotateCcw },
+  { to: "/purchasing", label: "Purchasing", icon: ShoppingCart },
   { to: "/profit-loss", label: "Reports", icon: ChartNoAxesCombined },
   { to: "/settings", label: "Settings & permissions", icon: Settings },
   { to: "/activity", label: "Activity log", icon: Activity },
-  { to: "/admin", section: "notifications", label: "Notifications", icon: Bell },
+  { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/settings", label: "Team & location", icon: MapPinned },
 ];
 
 const teamNavigation: NavigationEntry[] = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/items", label: "Inventory", icon: Package },
+  { to: "/adjustments", label: "Adjustments", icon: SlidersHorizontal },
   { to: "/categories", label: "Products & categories", icon: Boxes, roles: ["manager"] },
-  {
-    to: "/admin",
-    section: "requests",
-    label: "Requests & approvals",
-    icon: ClipboardCheck,
-    roles: ["manager"],
-  },
-  {
-    to: "/admin",
-    section: "transfers",
-    label: "Transfers",
-    icon: ArrowLeftRight,
-    roles: ["manager"],
-  },
-  {
-    to: "/admin",
-    section: "stocktaking",
-    label: "Stocktaking",
-    icon: ClipboardList,
-    roles: ["manager"],
-  },
-  {
-    to: "/admin",
-    section: "returns",
-    label: "Sales & returns",
-    icon: RotateCcw,
-    roles: ["manager"],
-  },
-  {
-    to: "/admin",
-    section: "purchasing",
-    label: "Purchasing",
-    icon: ShoppingCart,
-    roles: ["manager"],
-  },
-  { to: "/admin", section: "suppliers", label: "Suppliers", icon: Truck, roles: ["manager"] },
-  {
-    to: "/admin",
-    section: "thresholds",
-    label: "Thresholds",
-    icon: SlidersHorizontal,
-    roles: ["manager"],
-  },
+  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+  { to: "/counts", label: "Stocktaking", icon: ClipboardList },
+  { to: "/sales", label: "Sales & returns", icon: RotateCcw },
+  { to: "/purchasing", label: "Purchasing", icon: ShoppingCart },
   { to: "/profit-loss", label: "Reports", icon: ChartNoAxesCombined, roles: ["manager"] },
   { to: "/activity", label: "Activity log", icon: Activity },
-  {
-    to: "/admin",
-    section: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    roles: ["manager", "staff"],
-  },
-  { to: "/reports", label: "Daily reports", icon: ClipboardList },
+  { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -181,19 +121,6 @@ function WorkspaceLink({
   const activeClass = mobile
     ? "!text-aurora-b"
     : "!border-white/10 bg-nav-active font-medium !text-white shadow-[inset_0_0_20px_-14px_rgba(78,205,164,0.18)]";
-  if (entry.section)
-    return (
-      <Link
-        to="/admin"
-        search={{ section: entry.section }}
-        activeOptions={{ exact: false }}
-        onClick={onNavigate}
-        className={className}
-        activeProps={{ className: activeClass }}
-      >
-        {children}
-      </Link>
-    );
   return (
     <Link
       to={entry.to}
@@ -247,28 +174,21 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const bootstrapped = useBootstrap();
-  const { user, isAdmin, logout, portalId, managerSectionEnabled } = useAuth();
+  const bootstrapped = useHydrated();
+  const { user, isAdmin, logout, portalId, clearPortal, managerSectionEnabled } = useAuth();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
-  const operationCounts = useLiveQuery(async () => {
-    const database = db();
-    const [requests, transfers, orders, lowStock] = await Promise.all([
-      database.branchRequests.where("status").equals("pending").count(),
-      database.transfers.toArray(),
-      database.purchaseOrders.where("status").equals("ordered").count(),
-      database.items
-        .filter((item) => !item.deletedAt && item.quantity <= item.lowStockThreshold)
-        .count(),
-    ]);
-    const transferAlerts = transfers.filter(
-      (transfer) =>
-        transfer.status === "pending" ||
-        transfer.status === "in-transit" ||
-        (transfer.status === "received" &&
-          Date.now() - Date.parse(transfer.receivedAt ?? "") < 7 * 24 * 60 * 60 * 1000),
-    ).length;
-    return { requests, alerts: requests + transferAlerts + orders + lowStock };
-  }, []);
+  const scopeId = useScopeLocationId();
+  const dashboard = useDashboard(scopeId);
+  const unread = useUnreadCount();
+  const transferWork =
+    Number(dashboard.data?.transfers.toApprove ?? 0) +
+    Number(dashboard.data?.transfers.toDispatch ?? 0) +
+    Number(dashboard.data?.transfers.toReceive ?? 0);
+  const badges: Partial<Record<NavigationEntry["to"], number>> = {
+    "/adjustments": Number(dashboard.data?.pendingAdjustments ?? 0),
+    "/transfers": transferWork,
+    "/notifications": unread.data?.count ?? 0,
+  };
 
   if (user === undefined) return null;
   if (!user) return <LoginScreen />;
@@ -280,16 +200,8 @@ export function AppShell({
     );
   }
   if (!isAdmin && !portalId) return <PortalPicker />;
-  const visibleNav = isAdmin
-    ? adminNavigation.map((entry) => {
-        const badge =
-          entry.section === "requests"
-            ? (operationCounts?.requests ?? 0)
-            : entry.section === "notifications"
-              ? (operationCounts?.alerts ?? 0)
-              : undefined;
-        return badge === undefined ? entry : { ...entry, badge };
-      })
+  const baseNav = isAdmin
+    ? adminNavigation
     : teamNavigation.filter(
         (entry) =>
           !entry.roles ||
@@ -297,6 +209,10 @@ export function AppShell({
             ? entry.roles.includes("staff")
             : entry.roles.includes(user.role)),
       );
+  const visibleNav = baseNav.map((entry) => {
+    const badge = badges[entry.to];
+    return badge === undefined ? entry : { ...entry, badge };
+  });
   const mobilePrimaryNav = visibleNav.slice(0, 4);
   const mobileMoreNav = visibleNav.slice(4);
 
@@ -326,15 +242,25 @@ export function AppShell({
             <p className="label-mono px-3 pb-2 pt-1 text-slate-300/80">Operations</p>
             {visibleNav.map((entry, index) => (
               <WorkspaceLink
-                key={`${entry.to}-${entry.section ?? entry.label}-${index}`}
+                key={`${entry.to}-${entry.label}-${index}`}
                 entry={entry}
               />
             ))}
           </nav>
 
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/4 p-2 text-left">
-            <p className="label-mono text-slate-300/80">Guide template</p>
-            <p className="mt-1 text-xs text-slate-200/75">Sample data stays in this browser.</p>
+            <p className="label-mono text-slate-300/80">{isAdmin ? "Access" : "Branch"}</p>
+            <p className="mt-1 text-xs text-slate-200/75">
+              {isAdmin ? "All branches" : (user.branches.find((b) => b.id === portalId)?.name ?? "")}
+            </p>
+            {!isAdmin && user.branches.length > 1 && (
+              <button
+                onClick={clearPortal}
+                className="mt-2 w-full rounded-xl border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/5"
+              >
+                Switch branch
+              </button>
+            )}
             <button
               onClick={logout}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-transparent px-3 py-2.5 text-xs text-slate-200 transition-colors hover:border-rose/50 hover:bg-rose/10 hover:text-white"
@@ -388,7 +314,7 @@ export function AppShell({
               <div className="flex flex-col gap-1">
                 {mobileMoreNav.map((entry, index) => (
                   <WorkspaceLink
-                    key={`more-${entry.to}-${entry.section ?? entry.label}-${index}`}
+                    key={`more-${entry.to}-${entry.label}-${index}`}
                     entry={entry}
                     mobileMenu
                     onNavigate={() => setMobileMoreOpen(false)}
@@ -417,7 +343,7 @@ export function AppShell({
         <div className="mx-auto grid w-full min-w-0 max-w-lg grid-cols-5 gap-1 px-1 pt-1">
           {mobilePrimaryNav.map((entry, index) => (
             <WorkspaceLink
-              key={`mobile-${entry.to}-${entry.section ?? entry.label}-${index}`}
+              key={`mobile-${entry.to}-${entry.label}-${index}`}
               entry={entry}
               mobile
             />
