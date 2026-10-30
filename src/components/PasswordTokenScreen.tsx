@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,14 @@ export function PasswordTokenScreen({
   mode: "activate" | "reset";
 }) {
   const { activateAccount, resetPassword } = useAuth();
+  // Keep the token in memory and take it out of the address bar, so it does not stay in
+  // the browser history or get copied along when someone shares a screenshot or the URL.
+  const [keptToken] = useState(token);
+  useEffect(() => {
+    if (window.location.search.includes("token=")) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -26,15 +34,15 @@ export function PasswordTokenScreen({
       toast.error("The passwords do not match.");
       return;
     }
-    if (!token) {
+    if (!keptToken) {
       toast.error("This link is missing its token.");
       return;
     }
 
     setSaving(true);
     try {
-      if (isActivation) await activateAccount(token, password);
-      else await resetPassword(token, password);
+      if (isActivation) await activateAccount(keptToken, password);
+      else await resetPassword(keptToken, password);
       toast.success(
         isActivation
           ? "Account activated. You can sign in now."
