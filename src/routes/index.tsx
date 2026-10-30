@@ -11,8 +11,8 @@ import { useDashboard, useScopeLocationId } from "@/lib/overview";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — StockLine Inventory" },
-      { name: "description", content: "Stock alerts, pending work and recent movements at a glance." },
+      { title: "StockLine Inventory | Multi-branch Stock & Sales Management" },
+      { name: "description", content: "StockLine is an inventory management system for businesses with several branches: track stock, transfers, sales, purchasing and reports in one place." },
     ],
   }),
   component: Dashboard,
