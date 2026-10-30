@@ -29,6 +29,7 @@ import { useTheme } from "@/lib/theme";
 import { useHydrated } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import { useDashboard, useScopeLocationId, useUnreadCount } from "@/lib/overview";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { LoginScreen } from "@/components/LoginScreen";
 import { PortalPicker } from "@/components/PortalPicker";
 import { LoadingPanels } from "@/components/Modal";
@@ -297,6 +298,8 @@ export function AppShell({
           </motion.div>
         </main>
       </div>
+
+      <InstallPrompt />
 
       {mobileMoreOpen && (
         <button

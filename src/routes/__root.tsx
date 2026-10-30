@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { ThemeProvider, themeBootScript } from "../lib/theme";
 import { AuthProvider } from "../lib/auth";
+import "../lib/install";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
