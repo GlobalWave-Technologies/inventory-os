@@ -71,18 +71,28 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+// The public address of the site. Change this when you move to your own domain.
+const SITE_URL = "https://inventory-os-rc1p.vercel.app";
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StockLine Inventory" },
-      { name: "description", content: "Inventory, stock, and sales management for every branch." },
+      { title: "StockLine Inventory | Multi-branch Stock & Sales Management" },
+      { name: "description", content: "StockLine is an inventory management system for businesses with several branches: track stock, transfers, sales, purchasing and reports in one place." },
       { name: "author", content: "StockLine" },
-      { property: "og:title", content: "StockLine Inventory" },
-      { property: "og:description", content: "Inventory, stock, and sales management for every branch." },
+      { name: "application-name", content: "StockLine Inventory" },
+      { name: "apple-mobile-web-app-title", content: "StockLine" },
+      { name: "theme-color", content: "#F2544F" },
+      { property: "og:site_name", content: "StockLine Inventory" },
+      { property: "og:title", content: "StockLine Inventory | Multi-branch Stock & Sales Management" },
+      { property: "og:description", content: "StockLine is an inventory management system for businesses with several branches: track stock, transfers, sales, purchasing and reports in one place." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: SITE_URL },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "StockLine Inventory | Multi-branch Stock & Sales Management" },
+      { name: "twitter:description", content: "StockLine is an inventory management system for businesses with several branches: track stock, transfers, sales, purchasing and reports in one place." },
     ],
     links: [
       {
@@ -95,8 +105,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap",
       },
-      { rel: "icon", href: "/inventory-control-logo.svg", type: "image/svg+xml" },
-      { rel: "apple-touch-icon", href: "/inventory-control-logo.svg" },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml", sizes: "any" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
+      { rel: "canonical", href: SITE_URL + "/" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "StockLine Inventory",
+          alternateName: "StockLine",
+          url: SITE_URL + "/",
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,
