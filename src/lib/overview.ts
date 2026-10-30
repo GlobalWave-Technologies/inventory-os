@@ -69,13 +69,20 @@ export type AuditEvent = {
 };
 type AuditPage = { items: AuditEvent[]; nextCursor: number | null };
 
-export function useAuditLog(enabled: boolean) {
+export type AuditFilters = { userId: number | null; action: string; from: string; to: string };
+
+export function useAuditLog(enabled: boolean, filters: AuditFilters) {
   const hydrated = useHydrated();
   const { user } = useAuth();
+  const params = new URLSearchParams({ limit: "30" });
+  if (filters.userId !== null) params.set("userId", String(filters.userId));
+  if (filters.action) params.set("action", filters.action);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
   return useInfiniteQuery({
-    queryKey: ["audit"],
+    queryKey: ["audit", filters],
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => apiRequest<AuditPage>(`/audit?limit=30&before=${pageParam}`),
+    queryFn: ({ pageParam }) => apiRequest<AuditPage>(`/audit?${params.toString()}&before=${pageParam}`),
     getNextPageParam: (lastPage: AuditPage) => lastPage.nextCursor ?? undefined,
     enabled: enabled && hydrated && !!user,
   });
