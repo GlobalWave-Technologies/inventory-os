@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell, PrimaryButton } from "@/components/AppShell";
 import { BranchManager } from "@/components/BranchManager";
 import { InstallApp } from "@/components/InstallApp";
+import { EmailNotifications } from "@/components/EmailNotifications";
 import { Field } from "@/components/Modal";
 import { UsersManager } from "@/components/UsersManager";
 import { Switch } from "@/components/ui/switch";
@@ -37,6 +38,7 @@ function SettingsPage() {
       <AppShell eyebrow="Account" title="Account settings">
         <div className="flex flex-col gap-4">
           <PasswordManager />
+          <EmailNotifications />
           <InstallApp />
         </div>
       </AppShell>
@@ -47,6 +49,7 @@ function SettingsPage() {
     <AppShell eyebrow="Admin" title="Settings">
       <div className="flex flex-col gap-4">
         <PasswordManager />
+        <EmailNotifications />
         <InstallApp />
         <ManagerSectionControl
           enabled={managerSectionEnabled}

@@ -42,7 +42,10 @@ function NotificationsPage() {
     else if (n.linkType === "adjustment") void navigate({ to: "/adjustments" });
     else if (n.linkType === "product") void navigate({ to: "/items" });
     else if (n.linkType === "stock_request") void navigate({ to: "/purchasing" });
-    else if (n.linkType === "count") void navigate({ to: "/counts" });
+    else if (n.linkType === "count" || n.linkType === "count_status") void navigate({ to: "/counts" });
+    else if (n.linkType === "purchase_order") void navigate({ to: "/purchasing" });
+    else if (n.linkType === "sales_report" || n.linkType === "return") void navigate({ to: "/sales" });
+    else if (n.linkType === "account") void navigate({ to: "/settings" });
   }
 
   async function readAllNow() {

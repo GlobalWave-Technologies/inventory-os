@@ -176,6 +176,15 @@ export function LoginScreen() {
                 </div>
               </div>
 
+              <div className="text-right">
+                <a
+                  href="/forgot-password"
+                  className={`text-sm font-medium underline-offset-4 hover:underline ${isDark ? "text-[#4ecda4]" : "text-[#0e8a6b]"}`}
+                >
+                  Forgot password?
+                </a>
+              </div>
+
               <button
                 type="submit"
                 disabled={saving}
