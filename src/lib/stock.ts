@@ -119,6 +119,8 @@ export function useSetThreshold() {
       shelf?: string;
     }) =>
       apiRequest<StockRow>("/stock/threshold", { method: "PUT", body: JSON.stringify(input) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: STOCK_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: STOCK_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }

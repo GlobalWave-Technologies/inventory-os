@@ -47,7 +47,9 @@ export function useCreateBranch() {
   return useMutation({
     mutationFn: (input: { name: string; type: BranchType }) =>
       apiPost<BranchRecord>("/locations", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: BRANCHES_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: BRANCHES_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -67,6 +69,8 @@ export function useUpdateBranch() {
         method: "PATCH",
         body: JSON.stringify(patch),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: BRANCHES_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: BRANCHES_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }

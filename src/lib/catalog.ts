@@ -82,7 +82,9 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CategoryInput) => apiPost<CategoryRecord>("/categories", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -94,7 +96,9 @@ export function useUpdateCategory() {
         method: "PATCH",
         body: JSON.stringify(patch),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -140,7 +144,9 @@ export function useCreateProduct() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: ProductInput) => apiPost<ProductRecord>("/products", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -164,7 +170,9 @@ export function useUpdateProduct() {
         method: "PATCH",
         body: JSON.stringify(patch),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 

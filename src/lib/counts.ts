@@ -94,7 +94,9 @@ export function useSaveCountLine(countId: number) {
   return useMutation({
     mutationFn: (input: { productId: number; countedQuantity: number }) =>
       apiRequest<{ productId: number }>(`/counts/${countId}/lines`, { method: "PUT", body: JSON.stringify(input) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["count", countId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["count", countId] }); // refresh in the background; don't hold the form open
+    },
   });
 }
 

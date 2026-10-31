@@ -58,7 +58,9 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: (input: NewUserInput) =>
       apiPost<LinkResult & { user: { id: number; email: string; name: string } }>("/users", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -76,7 +78,9 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, ...patch }: UserPatch) =>
       apiRequest<TeamUser>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -88,7 +92,9 @@ export function useSetUserActive() {
         method: "PATCH",
         body: JSON.stringify({ active }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY }); // refresh in the background; don't hold the form open
+    },
   });
 }
 

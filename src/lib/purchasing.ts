@@ -26,7 +26,9 @@ export function useCreateSupplier() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: SupplierInput) => apiPost<Supplier>("/suppliers", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["suppliers"] }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -35,7 +37,9 @@ export function useUpdateSupplier() {
   return useMutation({
     mutationFn: ({ id, ...input }: SupplierInput & { id: number }) =>
       apiRequest<Supplier>(`/suppliers/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["suppliers"] }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -78,7 +82,9 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: (input: { supplierId: number; productId: number; locationId: number; quantity: number; unitCost: string }) =>
       apiPost<PurchaseOrder>("/purchase-orders", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
@@ -133,7 +139,9 @@ export function useCreateStockRequest() {
   return useMutation({
     mutationFn: (input: { locationId: number; productId?: number; itemName: string; quantity: number; note?: string }) =>
       apiPost<StockRequest>("/stock-requests", input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["stock-requests"] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["stock-requests"] }); // refresh in the background; don't hold the form open
+    },
   });
 }
 
