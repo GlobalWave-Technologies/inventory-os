@@ -35,4 +35,9 @@ export function startPrivacyCover() {
   });
   window.addEventListener("pagehide", show);
   window.addEventListener("pageshow", hide);
+  // The window loses focus a moment before the page counts as hidden, so this can beat the phone's screenshot.
+  window.addEventListener("blur", show);
+  window.addEventListener("focus", hide);
+  // Safety: if the cover is ever left on screen, a tap clears it.
+  cover.addEventListener("pointerdown", hide);
 }
