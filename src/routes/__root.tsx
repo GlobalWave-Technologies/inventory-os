@@ -1,3 +1,4 @@
+import { RoutePreloader, RouteProgress } from "../components/RouteHelpers";
 import "../lib/privacyCover";
 import "../lib/offlineSetup";
 import { OfflineBanner } from "../components/OfflineBanner";
@@ -173,6 +174,8 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <Toaster position="top-right" richColors />
+          <RouteProgress />
+          <RoutePreloader />
           <OfflineBanner />
           <ConfirmHost />
         </AuthProvider>
