@@ -5,7 +5,12 @@
 // It is plain DOM on purpose: it must appear in the same instant the page is hidden, which is
 // faster than waiting for React to draw. Phones decide when they take that screenshot, so this
 // works on most devices but is a best effort, not a guarantee.
-if (typeof window !== "undefined") {
+let started = false;
+
+export function startPrivacyCover() {
+  if (started || typeof window === "undefined") return;
+  started = true;
+
   const cover = document.createElement("div");
   cover.setAttribute("aria-hidden", "true");
   cover.style.cssText =
@@ -15,6 +20,7 @@ if (typeof window !== "undefined") {
   logo.alt = "";
   logo.style.cssText = "width:72px;height:72px";
   cover.appendChild(logo);
+  document.body.appendChild(cover);
 
   const show = () => {
     cover.style.display = "flex";
@@ -22,14 +28,6 @@ if (typeof window !== "undefined") {
   const hide = () => {
     cover.style.display = "none";
   };
-
-  const attach = () => {
-    if (!cover.isConnected) document.body.appendChild(cover);
-    if (document.visibilityState === "hidden") show();
-  };
-  // Added after the page has loaded, so it never gets in the way of the page drawing itself.
-  if (document.readyState === "complete") attach();
-  else window.addEventListener("load", attach, { once: true });
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") show();

@@ -1,6 +1,5 @@
+import { AppBoot } from "../components/AppBoot";
 import { RoutePreloader, RouteProgress } from "../components/RouteHelpers";
-import "../lib/privacyCover";
-import "../lib/offlineSetup";
 import { OfflineBanner } from "../components/OfflineBanner";
 import { ConfirmHost } from "../components/ConfirmDialog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -174,6 +173,7 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <Toaster position="top-right" richColors />
+          <AppBoot />
           <RouteProgress />
           <RoutePreloader />
           <OfflineBanner />
