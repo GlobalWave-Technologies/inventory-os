@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { ThemeProvider, themeBootScript } from "../lib/theme";
 import { AuthProvider } from "../lib/auth";
 import "../lib/install";
+import { reportProblem } from "../lib/monitor";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -39,6 +40,7 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
+  reportProblem({ kind: "react_crash", message: error.message });
   const router = useRouter();
 
   return (

@@ -1,3 +1,5 @@
+import { reportProblem } from "./monitor";
+
 type ApiErrorDetail = {
   field?: string;
   message: string;
@@ -140,7 +142,35 @@ export function refreshTokens(): Promise<boolean> {
   return refreshInFlight;
 }
 
+const SLOW_MS = 8000;
+const routeOf = (path: string) =>
+  (path.split(/[?#]/)[0] ?? path)
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ":id")
+    .replace(/\/\d+/g, "/:id");
+
+// Every request goes through here: failures and very slow answers are reported once.
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const started = performance.now();
+  const method = (init.method ?? "GET").toUpperCase();
+  try {
+    const result = await apiRequestRaw<T>(path, init);
+    const ms = Math.round(performance.now() - started);
+    if (ms > SLOW_MS) reportProblem({ kind: "slow_response", api: routeOf(path), method, ms });
+    return result;
+  } catch (error) {
+    const ms = Math.round(performance.now() - started);
+    if (error instanceof ApiError) {
+      if ([500, 502, 504].includes(error.status)) {
+        reportProblem({ kind: "api_failed", api: routeOf(path), method, status: error.status, ms });
+      }
+    } else {
+      reportProblem({ kind: "api_failed", api: routeOf(path), method, status: 0, ms });
+    }
+    throw error;
+  }
+}
+
+async function apiRequestRaw<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) {
     throw new ApiError(0, "Set VITE_API_URL to the inventory API origin before signing in.");
   }
