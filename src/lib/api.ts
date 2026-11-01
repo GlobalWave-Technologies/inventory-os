@@ -165,6 +165,14 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       }
     } else {
       reportProblem({ kind: "api_failed", api: routeOf(path), method, status: 0, ms });
+      if (error instanceof TypeError) {
+        throw new ApiError(
+          0,
+          navigator.onLine === false
+            ? "You're offline. Reconnect and try again."
+            : "Could not reach the server. Check your connection and try again.",
+        );
+      }
     }
     throw error;
   }

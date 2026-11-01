@@ -1,3 +1,5 @@
+import "../lib/offlineSetup";
+import { OfflineBanner } from "../components/OfflineBanner";
 import { ConfirmHost } from "../components/ConfirmDialog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -158,6 +160,7 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <Toaster position="top-right" richColors />
+          <OfflineBanner />
           <ConfirmHost />
         </AuthProvider>
       </ThemeProvider>
