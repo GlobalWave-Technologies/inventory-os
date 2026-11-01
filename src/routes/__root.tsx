@@ -1,3 +1,4 @@
+import { ConfirmHost } from "../components/ConfirmDialog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -157,6 +158,7 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <Toaster position="top-right" richColors />
+          <ConfirmHost />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

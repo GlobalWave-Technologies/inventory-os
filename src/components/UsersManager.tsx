@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -149,7 +150,16 @@ export function UsersManager() {
 
   async function toggleActiveNow(target: TeamUser) {
     const next = !target.isActive;
-    if (!next && !confirm(`Deactivate ${target.name}? They will be signed out and cannot sign in.`)) return;
+    if (
+      !next &&
+      !(await askConfirm({
+        title: `Deactivate ${target.name}?`,
+        message: "They will be signed out and cannot sign in until you reactivate them.",
+        confirmLabel: "Deactivate",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await setActive.mutateAsync({ id: target.id, active: next });
       toast.success(next ? `${target.name} reactivated` : `${target.name} deactivated`);
@@ -164,7 +174,14 @@ export function UsersManager() {
       if (target.pending) {
         showLink(await requestActivationLink(target.id), target.name, "activation");
       } else {
-        if (!confirm(`Make a password reset link for ${target.name}? Any older link stops working.`)) return;
+        if (
+          !(await askConfirm({
+            title: `Make a reset link for ${target.name}?`,
+            message: "Any older link stops working.",
+            confirmLabel: "Make link",
+          }))
+        )
+          return;
         showLink(await requestResetLink(target.id), target.name, "reset");
       }
     } catch (error) {

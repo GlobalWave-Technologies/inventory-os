@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -88,7 +89,17 @@ function TransfersPage() {
   }
 
   async function actNow(t: Transfer, action: TransferAction) {
-    if ((action === "cancel" || action === "reject") && !confirm(`${action === "cancel" ? "Cancel" : "Reject"} this transfer?`)) return;
+    if (
+      (action === "cancel" || action === "reject") &&
+      !(await askConfirm({
+        title: action === "cancel" ? "Cancel this transfer?" : "Reject this transfer?",
+        message: "The request will be closed and no stock will move.",
+        confirmLabel: action === "cancel" ? "Cancel transfer" : "Reject transfer",
+        cancelLabel: "Go back",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await act.mutateAsync({ id: t.id, action });
       toast.success(DONE[action]);

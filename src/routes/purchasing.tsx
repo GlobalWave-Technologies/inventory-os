@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { ShoppingCart } from "lucide-react";
 import { useState } from "react";
@@ -197,7 +198,17 @@ function Orders({ nameOf }: { nameOf: (id: number) => string }) {
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
 
   async function actNow(o: PurchaseOrder, action: "receive" | "cancel") {
-    if (action === "cancel" && !confirm("Cancel this order?")) return;
+    if (
+      action === "cancel" &&
+      !(await askConfirm({
+        title: "Cancel this order?",
+        message: "The order will be marked as cancelled and no stock will be added.",
+        confirmLabel: "Cancel order",
+        cancelLabel: "Keep order",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await act.mutateAsync({ id: o.id, action });
       toast.success(action === "receive" ? "Received. Stock added and cost updated." : "Order cancelled");

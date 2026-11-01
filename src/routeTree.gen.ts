@@ -15,6 +15,7 @@ import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AdjustmentsRouteImport } from './routes/adjustments'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as CountsRouteImport } from './routes/counts'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfitLossRouteImport } from './routes/profit-loss'
@@ -52,6 +53,11 @@ const CategoriesRoute = CategoriesRouteImport.update({
 const CountsRoute = CountsRouteImport.update({
   id: '/counts',
   path: '/counts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItemsRoute = ItemsRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
   '/counts': typeof CountsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/items': typeof ItemsRoute
   '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
   '/counts': typeof CountsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/items': typeof ItemsRoute
   '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/adjustments': typeof AdjustmentsRoute
   '/categories': typeof CategoriesRoute
   '/counts': typeof CountsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/items': typeof ItemsRoute
   '/notifications': typeof NotificationsRoute
   '/profit-loss': typeof ProfitLossRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/adjustments'
     | '/categories'
     | '/counts'
+    | '/forgot-password'
     | '/items'
     | '/notifications'
     | '/profit-loss'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/adjustments'
     | '/categories'
     | '/counts'
+    | '/forgot-password'
     | '/items'
     | '/notifications'
     | '/profit-loss'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/adjustments'
     | '/categories'
     | '/counts'
+    | '/forgot-password'
     | '/items'
     | '/notifications'
     | '/profit-loss'
@@ -202,6 +214,7 @@ export interface RootRouteChildren {
   AdjustmentsRoute: typeof AdjustmentsRoute
   CategoriesRoute: typeof CategoriesRoute
   CountsRoute: typeof CountsRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   ItemsRoute: typeof ItemsRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfitLossRoute: typeof ProfitLossRoute
@@ -254,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/counts'
       fullPath: '/counts'
       preLoaderRoute: typeof CountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/items': {
@@ -322,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdjustmentsRoute: AdjustmentsRoute,
   CategoriesRoute: CategoriesRoute,
   CountsRoute: CountsRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   ItemsRoute: ItemsRoute,
   NotificationsRoute: NotificationsRoute,
   ProfitLossRoute: ProfitLossRoute,

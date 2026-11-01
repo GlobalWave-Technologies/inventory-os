@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Boxes, Package, Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -90,7 +91,16 @@ function ProductsPage() {
   }
 
   async function archiveCategoryNow(category: CategoryRecord, isActive: boolean) {
-    if (!isActive && !confirm(`Archive “${category.name}”?`)) return;
+    if (
+      !isActive &&
+      !(await askConfirm({
+        title: `Archive “${category.name}”?`,
+        message: "It will be hidden. You can restore it later.",
+        confirmLabel: "Archive",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await updateCategory.mutateAsync({ id: category.id, isActive });
       toast.success(isActive ? `${category.name} restored` : `${category.name} archived`);
@@ -101,7 +111,16 @@ function ProductsPage() {
   }
 
   async function archiveProductNow(product: ProductRecord, isActive: boolean) {
-    if (!isActive && !confirm(`Archive “${product.name}”? It will be hidden from the catalogue.`)) return;
+    if (
+      !isActive &&
+      !(await askConfirm({
+        title: `Archive “${product.name}”?`,
+        message: "It will be hidden from the catalogue. You can restore it later from Show archived.",
+        confirmLabel: "Archive",
+        tone: "danger",
+      }))
+    )
+      return;
     try {
       await updateProduct.mutateAsync({ id: product.id, isActive });
       toast.success(isActive ? `${product.name} restored` : `${product.name} archived`);

@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PrimaryButton } from "@/components/AppShell";
@@ -99,7 +100,14 @@ export function CountView({ countId, onBack }: { countId: number; onBack: () => 
   const open = count?.status === "open";
 
   async function submitNow() {
-    if (!confirm("Submit this count? Every difference becomes an adjustment request for approval.")) return;
+    if (
+      !(await askConfirm({
+        title: "Submit this count?",
+        message: "Every difference becomes an adjustment request for approval.",
+        confirmLabel: "Submit count",
+      }))
+    )
+      return;
     try {
       const result = await submit.mutateAsync();
       toast.success(

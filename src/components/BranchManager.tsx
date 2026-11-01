@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/ConfirmDialog";
 import { Building2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -65,7 +66,12 @@ export function BranchManager() {
   async function setActiveNow(branch: BranchRecord, isActive: boolean) {
     if (
       !isActive &&
-      !confirm(`Archive ${branch.name}? Staff and managers will lose access to it.`)
+      !(await askConfirm({
+        title: `Archive ${branch.name}?`,
+        message: "Staff and managers will lose access to this branch. You can restore it later.",
+        confirmLabel: "Archive",
+        tone: "danger",
+      }))
     )
       return;
     try {
