@@ -1,3 +1,4 @@
+import "../lib/privacyCover";
 import "../lib/offlineSetup";
 import { OfflineBanner } from "../components/OfflineBanner";
 import { ConfirmHost } from "../components/ConfirmDialog";
