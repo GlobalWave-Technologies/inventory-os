@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ApiError, apiPost, apiRequest, clearTokens, refreshTokens, setAccessToken } from "./api";
+import { ApiError, apiPost, apiRequest, clearTokens, refreshTokens, setAccessToken, takeRefreshedUser } from "./api";
 import { wipeLegacyLocalData } from "./legacy";
 
 export type UserRole = "admin" | "manager" | "staff";
@@ -27,7 +27,7 @@ type ApiMe = {
   locations?: { id: number | string; name: string; type: string }[];
 };
 
-type ApiLogin = { accessToken?: string };
+type ApiLogin = { accessToken?: string; user?: ApiMe };
 
 type StoredSession = { branchId?: string };
 
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The access token is only in memory, so every page load starts by asking the server
     // (using the httpOnly cookie) for a fresh one. No cookie means nobody is signed in.
     void refreshTokens()
-      .then((restored) => (restored ? apiRequest<ApiMe>("/me") : null))
+      .then((restored) => (restored ? (takeRefreshedUser<ApiMe>() ?? apiRequest<ApiMe>("/me")) : null))
       .then((result) => {
         setUser(result ? normalizeMe(result) : null);
         setManagerSectionReady(true);
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const tokens = await apiPost<ApiLogin>("/auth/login", { email, password });
         if (!tokens.accessToken) throw new Error("The server did not return a valid session.");
         setAccessToken(tokens.accessToken);
-        const nextUser = normalizeMe(await apiRequest<ApiMe>("/me"));
+        const nextUser = normalizeMe(tokens.user ?? (await apiRequest<ApiMe>("/me")));
         setUser(nextUser);
         setManagerSectionReady(true);
         storeSelectedBranch(null);

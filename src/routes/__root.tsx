@@ -81,6 +81,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 // The public address of the site. Change this when you move to your own domain.
 const SITE_URL = "https://inventory-os-rc1p.vercel.app";
 
+const apiOrigin = (() => {
+  try {
+    return new URL(String(import.meta.env["VITE_API_URL"] ?? "")).origin;
+  } catch {
+    return "";
+  }
+})();
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -102,6 +110,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "StockLine is an inventory management system for businesses with several branches: track stock, transfers, sales, purchasing and reports in one place." },
     ],
     links: [
+      // Start the secure connection to the API while the page is still loading, so the first request does not wait for it.
+      ...(apiOrigin
+        ? [{ rel: "preconnect", href: apiOrigin, crossOrigin: "use-credentials" as const }]
+        : []),
       {
         rel: "stylesheet",
         href: appCss,

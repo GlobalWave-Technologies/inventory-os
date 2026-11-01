@@ -29,6 +29,14 @@ const API_BASE_URL = (import.meta.env["VITE_API_URL"] ?? "").replace(/\/$/, "");
 // set by the server, so no script on the page (including ours) can read it.
 let accessToken: string | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
+let refreshedUser: unknown = null;
+
+/** The signed-in person's details that arrived with the last refresh. They can be taken once. */
+export function takeRefreshedUser<T>(): T | null {
+  const user = refreshedUser as T | null;
+  refreshedUser = null;
+  return user;
+}
 
 export function setAccessToken(token: string) {
   accessToken = token;
@@ -115,12 +123,13 @@ async function doRefresh(): Promise<boolean> {
     return false;
   }
 
-  const result = mapResponseKeys(await readPayload(response)) as { accessToken?: string } | null;
+  const result = mapResponseKeys(await readPayload(response)) as { accessToken?: string; user?: unknown } | null;
   if (!result?.accessToken) {
     clearTokens();
     return false;
   }
   setAccessToken(result.accessToken);
+  refreshedUser = result.user ?? null;
   return true;
 }
 
