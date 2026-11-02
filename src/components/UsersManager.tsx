@@ -258,7 +258,7 @@ export function UsersManager() {
                     <button
                       onClick={() => void newLink(member)}
                       disabled={busy}
-                      className="flex-1 rounded-lg border border-hair px-2.5 py-2 text-xs text-fog hover:text-strong sm:flex-none"
+                      className="flex-1 whitespace-nowrap rounded-lg border border-hair px-2.5 py-2 text-xs text-fog hover:text-strong sm:flex-none"
                     >
                       {member.pending ? "New activation link" : "Reset password link"}
                     </button>

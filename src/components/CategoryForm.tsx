@@ -160,7 +160,7 @@ export function CategoryForm({
                 { key: nextKey(), name: "", type: "text", optionsText: "", required: false },
               ])
             }
-            className="flex items-center gap-1 rounded-lg border border-hair px-2.5 py-1 text-xs text-fog hover:text-strong"
+            className="flex items-center gap-1 rounded-lg border border-hair px-2.5 py-2 text-xs text-fog hover:text-strong"
           >
             <Plus className="size-3.5" /> Add field
           </button>

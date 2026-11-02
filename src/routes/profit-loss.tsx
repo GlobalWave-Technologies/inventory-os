@@ -4,7 +4,8 @@ import { useState } from "react";
 import { AppShell, GhostButton } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { useAuth } from "@/lib/auth";
-import { cedi } from "@/lib/format";
+import { ProfitChart } from "@/components/ProfitChart";
+import { cedi, profitOrLoss } from "@/lib/format";
 import { useSalesBreakdown, useSlowMovers, useValuation, type SalesGroupBy, type ValueGroupBy } from "@/lib/reports";
 import { useMyBranches } from "@/lib/sales";
 
@@ -50,7 +51,7 @@ function ReportsPage() {
                 {t === "sales" ? "Profit & loss" : t === "value" ? "Stock value" : "Slow movers"}
               </GhostButton>
             ))}
-            <select className="field max-w-[14rem]" value={branch ?? ""} onChange={(e) => setBranch(e.target.value ? Number(e.target.value) : null)}>
+            <select className="field sm:max-w-[14rem]" value={branch ?? ""} onChange={(e) => setBranch(e.target.value ? Number(e.target.value) : null)}>
               <option value="">{isAdmin ? "All branches" : "All my branches"}</option>
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -59,7 +60,7 @@ function ReportsPage() {
               ))}
             </select>
           </div>
-          {tab === "sales" && <SalesTab locationId={branch} />}
+          {tab === "sales" && <SalesTab locationId={branch} onOpenBranch={setBranch} branches={branches} isAdmin={isAdmin} />}
           {tab === "value" && <ValueTab locationId={branch} />}
           {tab === "slow" && <SlowTab locationId={branch} />}
         </div>
@@ -70,9 +71,9 @@ function ReportsPage() {
 
 function Figure({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="glass rounded-2xl p-4">
+    <div className="glass min-w-0 rounded-2xl p-3 sm:p-4">
       <p className="label-mono">{label}</p>
-      <p className={`num mt-2 text-xl font-semibold ${tone ?? "text-strong"}`}>{value}</p>
+      <p className={`num mt-2 text-base font-semibold [overflow-wrap:anywhere] sm:text-xl ${tone ?? "text-strong"}`}>{value}</p>
     </div>
   );
 }
@@ -87,26 +88,54 @@ const GROUP_LABEL: Record<SalesGroupBy, string> = {
   day: "By day",
 };
 
-function SalesTab({ locationId }: { locationId: number | null }) {
+function SalesTab({
+  locationId,
+  onOpenBranch,
+  branches,
+  isAdmin,
+}: {
+  locationId: number | null;
+  onOpenBranch: (id: number | null) => void;
+  branches: { id: number; name: string }[];
+  isAdmin: boolean;
+}) {
   const [from, setFrom] = useState(daysAgo(30));
   const [to, setTo] = useState(isoDay(new Date()));
-  const [groupBy, setGroupBy] = useState<SalesGroupBy>("product");
+  const [groupBy, setGroupBy] = useState<SalesGroupBy>(locationId ? "product" : "branch");
   const query = useSalesBreakdown({ from, to, locationId, groupBy, enabled: true });
   const data = query.data;
   const badRange = from > to;
+  // Admins get the total for all branches. Managers get a total once they pick one of their branches.
+  const showTotals = isAdmin || locationId !== null;
+  const trend = useSalesBreakdown({ from, to, locationId, groupBy: "day", enabled: showTotals });
+  const rows =
+    data && groupBy === "branch" && !isAdmin ? data.items.filter((row) => branches.some((b) => b.id === Number(row.key))) : (data?.items ?? []);
+  const total = data && profitOrLoss(data.totals.profit);
 
   return (
     <>
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fog/80">
+      {locationId !== null && (
+        <div>
+          <GhostButton
+            onClick={() => {
+              onOpenBranch(null);
+              setGroupBy("branch");
+            }}
+          >
+            {isAdmin ? "Back to all branches" : "Back to my branches"}
+          </GhostButton>
+        </div>
+      )}
+      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-fog/80">
           From
           <input className="field" type="date" max={to} value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-fog/80">
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-fog/80">
           To
           <input className="field" type="date" max={isoDay(new Date())} value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <select className="field max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as SalesGroupBy)}>
+        <select className="field col-span-2 sm:max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as SalesGroupBy)}>
           {(Object.keys(GROUP_LABEL) as SalesGroupBy[]).map((g) => (
             <option key={g} value={g}>
               {GROUP_LABEL[g]}
@@ -119,31 +148,60 @@ function SalesTab({ locationId }: { locationId: number | null }) {
       {query.isError && <Notice>Could not load the report. The range can be at most one year.</Notice>}
       {data && (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Figure label="Revenue" value={cedi(data.totals.revenue)} />
-            <Figure label="Refunds" value={cedi(data.totals.refunds)} />
-            <Figure label="Cost" value={cedi(data.totals.cost)} />
-            <Figure label="Profit" value={cedi(data.totals.profit)} tone="text-aurora-a" />
-          </div>
-          <p className="text-xs text-fog/70">
-            {data.totals.unitsSold} units sold, {data.totals.unitsReturned} returned. Cost is for the units that stayed sold.
-          </p>
-          {data.items.length === 0 && (
+          {showTotals && total && (
+            <>
+              <p className="label-mono">{locationId === null ? "All branches" : (branches.find((b) => b.id === locationId)?.name ?? "This branch")}</p>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <Figure label="Real price" value={cedi(data.totals.cost)} />
+                <Figure label="Sold price" value={cedi(data.totals.netRevenue)} />
+                <Figure label="Refunds" value={cedi(data.totals.refunds)} />
+                <Figure label={total.label} value={total.amount} tone={total.tone} />
+              </div>
+              <p className="text-xs text-fog/70">
+                {data.totals.unitsSold} units sold, {data.totals.unitsReturned} returned. Real price is what the units that stayed sold cost. Sold price is after refunds.
+              </p>
+            </>
+          )}
+          {trend.isError && <Notice>Could not load the graph.</Notice>}
+          {trend.data && <ProfitChart from={from} to={to} rows={trend.data.items} truncated={trend.data.truncated} />}
+          {rows.length === 0 && (
             <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No sales in this range" body="Try a wider date range." />
           )}
           <div className="flex flex-col gap-2">
-            {data.items.map((row) => (
-              <div key={String(row.key)} className="rounded-2xl border border-hair bg-panel/40 p-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 truncate text-sm font-semibold text-strong">{row.label}</p>
-                  <p className="num shrink-0 text-sm font-semibold text-aurora-a">{cedi(row.profit)}</p>
+            {rows.map((row) => {
+              const result = profitOrLoss(row.profit);
+              const details = (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-semibold text-strong">{row.label}</p>
+                    <p className={`num shrink-0 text-sm font-semibold ${result.tone}`}>
+                      {result.label} {result.amount}
+                    </p>
+                  </div>
+                  <p className="label-mono mt-1">
+                    {row.unitsSold} sold · real price {cedi(row.cost)} · sold price {cedi(row.netRevenue)}
+                    {row.unitsReturned > 0 ? ` · ${row.unitsReturned} returned` : ""}
+                  </p>
+                </>
+              );
+              return groupBy === "branch" && row.key !== null ? (
+                <button
+                  key={String(row.key)}
+                  type="button"
+                  className="rounded-2xl border border-hair bg-panel/40 p-3.5 text-left hover:border-aurora-a/40"
+                  onClick={() => {
+                    onOpenBranch(Number(row.key));
+                    setGroupBy("product");
+                  }}
+                >
+                  {details}
+                </button>
+              ) : (
+                <div key={String(row.key)} className="rounded-2xl border border-hair bg-panel/40 p-3.5">
+                  {details}
                 </div>
-                <p className="label-mono mt-1">
-                  {row.unitsSold} sold · revenue {cedi(row.netRevenue)} · cost {cedi(row.cost)}
-                  {row.unitsReturned > 0 ? ` · ${row.unitsReturned} returned` : ""}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {data.truncated && <p className="text-xs text-fog/70">Showing the top 200 rows. Narrow the dates or branch to see the rest.</p>}
         </>
@@ -160,7 +218,7 @@ function ValueTab({ locationId }: { locationId: number | null }) {
   const data = query.data;
   return (
     <>
-      <select className="field max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as ValueGroupBy)}>
+      <select className="field sm:max-w-[12rem]" value={groupBy} onChange={(e) => setGroupBy(e.target.value as ValueGroupBy)}>
         <option value="category">By category</option>
         <option value="branch">By branch</option>
         <option value="product">By product</option>
@@ -202,7 +260,7 @@ function SlowTab({ locationId }: { locationId: number | null }) {
   const items = query.data?.items ?? [];
   return (
     <>
-      <select className="field max-w-[14rem]" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+      <select className="field sm:max-w-[14rem]" value={days} onChange={(e) => setDays(Number(e.target.value))}>
         {[14, 30, 60, 90, 180].map((d) => (
           <option key={d} value={d}>
             Not sold in {d} days

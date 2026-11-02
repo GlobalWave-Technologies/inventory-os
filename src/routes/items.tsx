@@ -154,7 +154,7 @@ function InventoryPage() {
                       {low && <p className="label-mono text-amber">Low (≤ {row.minThreshold})</p>}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <GhostButton onClick={() => setAction({ kind: "stock", mode: addMode, row })}>
                       {addsDirectly ? "Add" : "Request in"}
                     </GhostButton>

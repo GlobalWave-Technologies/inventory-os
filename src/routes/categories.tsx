@@ -179,7 +179,7 @@ function ProductsPage() {
               }
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {activeCategories.map((category) => (
                 <article key={category.id} className="glass flex flex-col rounded-2xl p-4 sm:p-5">
                   <div className="flex items-start gap-3">
@@ -232,7 +232,7 @@ function ProductsPage() {
                       setCategoryFilter(category.id);
                       document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
                     }}
-                    className="mt-4 self-start text-xs text-aurora-a"
+                    className="mt-2 self-start py-2 text-left text-xs text-aurora-a"
                   >
                     View {category.name} products →
                   </button>
@@ -249,7 +249,7 @@ function ProductsPage() {
                   <button
                     key={category.id}
                     onClick={() => void archiveCategory(category, true)}
-                    className="flex items-center gap-1.5 rounded-lg border border-hair px-2.5 py-1.5 text-xs text-fog hover:text-strong"
+                    className="flex items-center gap-1.5 rounded-lg border border-hair px-2.5 py-2 text-xs text-fog hover:text-strong"
                   >
                     <ArchiveRestore className="size-3.5" /> Restore {category.name}
                   </button>

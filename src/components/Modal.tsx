@@ -44,7 +44,7 @@ export function Modal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
-            className={`glass relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl ${
+            className={`glass relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl ${
               wide ? "sm:max-w-3xl" : "sm:max-w-lg"
             }`}
           >
@@ -56,12 +56,12 @@ export function Modal({
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="grid size-8 shrink-0 place-items-center rounded-lg border border-hair text-fog hover:text-strong"
+                className="grid size-10 shrink-0 place-items-center rounded-lg border border-hair text-fog hover:text-strong sm:size-8"
               >
                 <X className="size-4" />
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-4">{children}</div>
+            <div className="overflow-y-auto px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">{children}</div>
           </motion.div>
         </div>
       )}

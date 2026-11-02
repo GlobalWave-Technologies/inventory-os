@@ -39,10 +39,10 @@ function Stat({
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-        className="glass card3d h-full rounded-2xl p-4 sm:p-5"
+        className="glass card3d h-full rounded-2xl p-3 sm:p-5"
       >
-        <div className="flex items-start justify-between gap-3">
-          <p className="label-mono">{label}</p>
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <p className="label-mono min-w-0 [overflow-wrap:anywhere]">{label}</p>
           <span
             className="grid size-8 shrink-0 place-items-center rounded-lg"
             style={{ backgroundColor: `color-mix(in oklab, ${tone} 16%, transparent)`, color: tone }}
@@ -77,7 +77,7 @@ function Dashboard() {
         </p>
       ) : (
         <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Stat
               label="Low stock"
               value={String(Number(data.lowStock))}
@@ -113,7 +113,7 @@ function Dashboard() {
           </div>
 
           {(data.stockValue !== undefined || data.totals) && (
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               {data.stockValue !== undefined && (
                 <Stat
                   label="Stock value"
@@ -143,7 +143,7 @@ function Dashboard() {
                 <p className="label-mono text-aurora-b">Live feed</p>
                 <h2 className="mt-1 font-display text-lg font-semibold text-strong">Recent movements</h2>
               </div>
-              <Link to="/activity" className="text-xs text-aurora-a">
+              <Link to="/activity" className="-my-2 py-2 text-xs text-aurora-a">
                 Full log
               </Link>
             </div>
