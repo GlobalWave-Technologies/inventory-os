@@ -23,15 +23,17 @@ export function startPrivacyCover() {
   document.body.appendChild(cover);
 
   const show = () => {
-    // login-safe: the sign-in and reset screens show nothing private, and the phone's saved-password
-    // sheet makes the window lose focus. Covering the page then blocks autofill.
-    if (document.querySelector('input[type="password"]')) return;
-    const a = document.activeElement;
-    if ((a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) && document.visibilityState !== "hidden") return;
     cover.style.display = "flex";
   };
   const hide = () => {
     cover.style.display = "none";
+  };
+  // The window also loses focus when the phone's saved-password sheet or the keyboard's suggestions open.
+  // That is not the app leaving the screen, so the early focus signal is ignored while a field is being used.
+  const showOnBlur = () => {
+    const field = document.activeElement;
+    if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) return;
+    show();
   };
 
   document.addEventListener("visibilitychange", () => {
@@ -40,8 +42,7 @@ export function startPrivacyCover() {
   });
   window.addEventListener("pagehide", show);
   window.addEventListener("pageshow", hide);
-  // The window loses focus a moment before the page counts as hidden, so this can beat the phone's screenshot.
-  window.addEventListener("blur", show);
+  window.addEventListener("blur", showOnBlur);
   window.addEventListener("focus", hide);
   // Safety: if the cover is ever left on screen, a tap clears it.
   cover.addEventListener("pointerdown", hide);
