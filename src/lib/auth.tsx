@@ -87,6 +87,32 @@ type AuthValue = {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+// A sign-out is only finished once the server confirms it. Until then the app will not restore the old session.
+const PENDING_LOGOUT = "pendingLogout";
+function rememberLogout(on: boolean) {
+  try {
+    if (on) localStorage.setItem(PENDING_LOGOUT, "1");
+    else localStorage.removeItem(PENDING_LOGOUT);
+  } catch {
+    /* storage can be blocked; the plain sign-out still works */
+  }
+}
+function logoutPending() {
+  try {
+    return localStorage.getItem(PENDING_LOGOUT) === "1";
+  } catch {
+    return false;
+  }
+}
+async function finishLogout() {
+  try {
+    await apiRequest("/auth/logout", { method: "POST", keepalive: true });
+    rememberLogout(false);
+  } catch {
+    /* stays pending and is tried again on the next visit */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
   const [portalId, setPortalId] = useState<string | null>(null);
@@ -98,6 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // The access token is only in memory, so every page load starts by asking the server
     // (using the httpOnly cookie) for a fresh one. No cookie means nobody is signed in.
+    if (logoutPending()) {
+      setUser(null);
+      setManagerSectionReady(true);
+      void finishLogout();
+      return;
+    }
     void refreshTokens()
       .then((restored) => (restored ? (takeRefreshedUser<ApiMe>() ?? apiRequest<ApiMe>("/me")) : null))
       .then((result) => {
@@ -147,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const tokens = await apiPost<ApiLogin>("/auth/login", { email, password });
         if (!tokens.accessToken) throw new Error("The server did not return a valid session.");
         setAccessToken(tokens.accessToken);
+        rememberLogout(false);
         const nextUser = normalizeMe(tokens.user ?? (await apiRequest<ApiMe>("/me")));
         setUser(nextUser);
         setManagerSectionReady(true);
@@ -162,7 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: () => {
         // The cookie goes along automatically; the server revokes it and clears it.
-        void apiRequest("/auth/logout", { method: "POST" }).catch(() => undefined);
+        rememberLogout(true);
+        void finishLogout();
         clearTokens();
         storeSelectedBranch(null);
         setUser(null);
