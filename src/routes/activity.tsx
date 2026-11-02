@@ -44,7 +44,7 @@ function ActivityPage() {
 }
 
 function MovementLog() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user, managerSectionEnabled } = useAuth();
   const scopeId = useScopeLocationId();
   const branchesQuery = useBranches(false);
   const [branchChoice, setBranchChoice] = useState<number | null>(null);
@@ -55,6 +55,11 @@ function MovementLog() {
 
   return (
     <>
+      {!isAdmin && (
+        <p className="text-xs text-fog/70">
+          {user?.role === "manager" && managerSectionEnabled ? "Activity at your branch." : "Your own activity."}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {isAdmin && (
           <select

@@ -19,6 +19,7 @@ import {
   type TeamUser,
 } from "@/lib/users";
 import { useSingleFlight } from "@/lib/useSingleFlight";
+import { BranchPicker } from "@/components/BranchPicker";
 
 const ROLE_LABEL: Record<RoleName, string> = {
   super_admin: "Super admin",
@@ -78,10 +79,6 @@ export function UsersManager() {
     ...(isSuperAdmin ? (["admin"] as const) : []),
   ];
 
-  const toggleBranch = (id: number) =>
-    setLocationIds((current) =>
-      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
-    );
 
   function showLink(result: LinkResult, who: string, kind: "activation" | "reset") {
     const token = kind === "activation" ? result.activationToken : result.resetToken;
@@ -357,24 +354,16 @@ export function UsersManager() {
           {role === "admin" ? (
             <p className="text-sm text-fog/70">Admins can use every branch.</p>
           ) : (
-            <Field label="Branches">
-              {activeBranches.length === 0 ? (
-                <p className="text-sm text-fog/70">Create a branch first, then assign people to it.</p>
-              ) : (
-                <div className="flex flex-col gap-2 rounded-2xl border border-hair bg-panel/40 p-3">
-                  {activeBranches.map((branch) => (
-                    <label key={branch.id} className="flex items-center gap-2 text-sm text-fog">
-                      <input
-                        type="checkbox"
-                        checked={locationIds.includes(branch.id)}
-                        onChange={() => toggleBranch(branch.id)}
-                      />
-                      {branch.name}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </Field>
+            <div>
+              <span className="label-mono">Branches</span>
+              <div className="mt-1.5">
+                {activeBranches.length === 0 ? (
+                  <p className="text-sm text-fog/70">Create a branch first, then assign people to it.</p>
+                ) : (
+                  <BranchPicker branches={activeBranches} value={locationIds} onChange={setLocationIds} />
+                )}
+              </div>
+            </div>
           )}
           <div className="flex justify-end gap-2">
             <GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton>

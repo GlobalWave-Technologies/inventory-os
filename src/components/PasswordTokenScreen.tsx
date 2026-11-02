@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { apiRequest, clearTokens } from "@/lib/api";
 
 export function PasswordTokenScreen({
   token,
@@ -48,6 +49,13 @@ export function PasswordTokenScreen({
           ? "Account activated. You can sign in now."
           : "Password reset. You can sign in now.",
       );
+      // Whoever opens this link must land on the sign-in screen, never in a session left on this browser.
+      try {
+        await apiRequest("/auth/logout", { method: "POST" });
+      } catch {
+        /* the sign-in screen still asks for the new password */
+      }
+      clearTokens();
       window.location.assign("/");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "This link could not be used.");

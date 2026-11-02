@@ -66,6 +66,36 @@ const GROUPS: { title: string; kinds: { kind: string; label: string }[] }[] = [
   },
 ];
 
+// Who receives each one. "Approvers" are the branch's managers, or the admins when managers are switched off.
+const RECIPIENTS: Record<string, string> = {
+  low_stock: "Approvers at that branch",
+  out_of_stock: "Approvers at that branch",
+  transfer_requested: "Approvers at the sending branch",
+  transfer_approved: "Staff and managers at the sending branch",
+  transfer_rejected: "The person who asked",
+  transfer_cancelled: "The person who asked, and approvers",
+  transfer_dispatched: "Staff and managers at the receiving branch",
+  transfer_received: "The person who asked, and approvers",
+  adjustment_requested: "Approvers at that branch",
+  adjustment_approved: "The person who asked",
+  adjustment_rejected: "The person who asked",
+  unusual_adjustment: "Admins",
+  stock_request_submitted: "Approvers at that branch",
+  stock_request_approved: "The person who asked",
+  stock_request_rejected: "The person who asked",
+  count_due: "Staff at that branch",
+  count_overdue: "Managers, then admins",
+  count_submitted: "Approvers at that branch",
+  purchase_order_created: "Admins",
+  purchase_order_received: "The person who ordered, and approvers",
+  purchase_order_cancelled: "The person who ordered, and admins",
+  sales_report_submitted: "Approvers at that branch",
+  sales_summary_submitted: "Admins",
+  return_recorded: "Approvers at that branch",
+  account_locked: "The person, and admins",
+  password_changed: "The person",
+};
+
 export function EmailNotifications() {
   const { isAdmin } = useAuth();
   const pref = useMyEmailPref();
@@ -121,7 +151,7 @@ export function EmailNotifications() {
       {isAdmin && (
         <div className="mt-5">
           <h3 className="text-sm font-semibold text-strong">What gets emailed</h3>
-          <p className="mt-1 text-xs text-fog/70">Applies to everyone who has email switched on.</p>
+          <p className="mt-1 text-xs text-fog/70">One list for the whole system. Each person can still switch all email off for themselves above. Approvers are the branch managers, or the admins when managers are switched off.</p>
           {kinds.isLoading && <p className="mt-3 text-sm text-fog/70">Loading…</p>}
           {kinds.isError && <p className="mt-3 text-sm text-amber">Could not load the list.</p>}
           {saved && (
@@ -132,14 +162,17 @@ export function EmailNotifications() {
                     <p className="label-mono">{group.title}</p>
                     <div className="mt-2 flex flex-col gap-2">
                       {group.kinds.map((item) => (
-                        <label key={item.kind} className="flex items-center gap-2 text-sm text-strong">
-                          <input
-                            type="checkbox"
+                        <div key={item.kind} className="flex items-start justify-between gap-3 rounded-xl border border-hair px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm text-strong">{item.label}</p>
+                            <p className="text-xs text-fog/60">To: {RECIPIENTS[item.kind] ?? "Everyone involved"}</p>
+                          </div>
+                          <Switch
                             checked={selected.includes(item.kind)}
-                            onChange={(event) => toggle(item.kind, event.target.checked)}
+                            aria-label={item.label}
+                            onCheckedChange={(on) => toggle(item.kind, on)}
                           />
-                          {item.label}
-                        </label>
+                        </div>
                       ))}
                     </div>
                   </div>

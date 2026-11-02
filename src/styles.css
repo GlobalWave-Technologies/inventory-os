@@ -246,3 +246,31 @@
   background: color-mix(in oklab, var(--fog) 30%, transparent);
   border-radius: 999px;
 }
+
+/* nice-checkbox: one look for every plain checkbox in the app */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid color-mix(in oklab, var(--fog) 60%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+input[type="checkbox"]:hover { border-color: var(--aurora-a); }
+input[type="checkbox"]:checked { background: var(--aurora-a); border-color: var(--aurora-a); }
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 0.32rem;
+  height: 0.62rem;
+  border: solid var(--background);
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--aurora-a); outline-offset: 2px; }
+input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
