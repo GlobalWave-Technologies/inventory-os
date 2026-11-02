@@ -1,6 +1,7 @@
 import { Eye, EyeOff, Menu, Moon, Sun } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { MobileLogin } from "@/components/MobileLogin";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 
@@ -28,8 +29,19 @@ export function LoginScreen() {
 
   return (
     <main
-      className={`grid h-[100svh] min-h-[100svh] grid-cols-1 overflow-hidden ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}
+      className={`grid min-h-[100svh] grid-cols-1 lg:h-[100svh] lg:overflow-hidden ${isDark ? "bg-[#021c26] text-white" : "bg-[#f4f7f8] text-[#14232f]"} lg:grid-cols-[1.08fr_1fr]`}
     >
+      <MobileLogin
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        email={email}
+        onEmailChange={setEmail}
+        password={password}
+        onPasswordChange={setPassword}
+        saving={saving}
+        onSubmit={submit}
+      />
+
       <section
         className={`relative hidden overflow-hidden px-4 py-5 sm:px-8 lg:block lg:px-8 lg:py-6 ${isDark ? "bg-[#021c26]" : "bg-[#0b2b35]"}`}
       >
@@ -81,7 +93,7 @@ export function LoginScreen() {
       </section>
 
       <section
-        className={`relative flex h-full min-h-0 items-center justify-center overflow-hidden px-3 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}
+        className={`relative hidden h-full min-h-0 items-center lg:flex justify-center overflow-hidden px-3 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 ${isDark ? "bg-[#0d2d39] text-white" : "bg-[#eef3f5] text-[#14232f]"}`}
       >
         <div className="relative flex max-h-full w-full max-w-[620px] flex-col justify-center">
           <button

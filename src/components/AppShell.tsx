@@ -100,7 +100,7 @@ function WorkspaceLink({
   const className = mobileMenu
     ? "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-fog transition-colors hover:bg-background/70 hover:text-strong"
     : mobile
-      ? "flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[10px] text-fog/70"
+      ? "flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[10px] text-fog/70"
       : "group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-sm text-slate-200/85 transition-all hover:border-white/10 hover:bg-white/5 hover:text-white";
   const children = (
     <>
@@ -109,7 +109,7 @@ function WorkspaceLink({
           mobile ? "size-[18px]" : "size-[18px] shrink-0 transition-transform group-hover:scale-110"
         }
       />
-      <span className={mobile ? "max-w-full truncate px-1" : "min-w-0 flex-1"}>
+      <span className={mobile ? "max-w-full truncate" : "min-w-0 flex-1"}>
         {mobile ? entry.label.split(" ")[0] : entry.label}
       </span>
       {(!mobile || mobileMenu) && entry.badge !== undefined && entry.badge > 0 && (
@@ -272,20 +272,20 @@ export function AppShell({
         </aside>
 
         <main className="ml-0 w-full min-w-0 flex-1 lg:ml-8">
-          <header className="mb-5 grid grid-cols-1 items-center gap-4 sm:flex sm:flex-wrap sm:justify-between sm:gap-3">
-            <div className="min-w-0">
+          <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <p className="label-mono">{eyebrow}</p>
               <h1 className="truncate font-display text-xl font-semibold text-strong sm:text-2xl">
                 {title}
               </h1>
             </div>
-            <div className="flex w-full min-w-0 max-w-full flex-wrap items-center justify-between justify-self-stretch gap-2 sm:w-auto sm:flex-nowrap sm:justify-self-auto sm:gap-4">
+            <div className="contents sm:flex sm:min-w-0 sm:flex-nowrap sm:items-center sm:gap-4">
               <ThemeToggle />
               <span className="hidden text-right sm:block">
                 <span className="block text-xs font-medium text-strong">{user.name}</span>
                 <span className="label-mono capitalize">{user.role}</span>
               </span>
-              {actions}
+              {actions && <div className="flex w-full min-w-0 justify-end sm:w-auto">{actions}</div>}
             </div>
           </header>
 
@@ -343,7 +343,7 @@ export function AppShell({
             </div>
           </div>
         )}
-        <div className="mx-auto grid w-full min-w-0 max-w-lg grid-cols-5 gap-1 px-1 pt-1">
+        <div className="mx-auto grid w-full min-w-0 max-w-lg grid-cols-5 gap-0.5 px-0.5 pt-1">
           {mobilePrimaryNav.map((entry, index) => (
             <WorkspaceLink
               key={`mobile-${entry.to}-${entry.label}-${index}`}

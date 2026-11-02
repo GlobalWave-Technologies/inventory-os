@@ -49,3 +49,12 @@ export function cedi(value: string | null | undefined): string {
   const n = Number(value);
   return Number.isFinite(n) ? money(n) : "—";
 }
+
+/** Words a profit the server sent as text. The sign only chooses the wording; the amount is unchanged. */
+export function profitOrLoss(profit: string) {
+  const n = Number(profit);
+  const amount = cedi(profit.replace(/^-/, ""));
+  if (n > 0) return { label: "Profit", amount, tone: "text-aurora-a" };
+  if (n < 0) return { label: "Loss", amount, tone: "text-rose" };
+  return { label: "Break-even", amount, tone: "text-strong" };
+}

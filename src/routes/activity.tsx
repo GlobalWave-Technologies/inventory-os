@@ -55,10 +55,10 @@ function MovementLog() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {isAdmin && (
           <select
-            className="field max-w-[14rem]"
+            className="field sm:max-w-[14rem]"
             value={branchChoice ?? ""}
             onChange={(e) => setBranchChoice(e.target.value ? Number(e.target.value) : null)}
           >
@@ -72,7 +72,7 @@ function MovementLog() {
               ))}
           </select>
         )}
-        <select className="field max-w-[14rem]" value={type} onChange={(e) => setType(e.target.value)}>
+        <select className="field sm:max-w-[14rem]" value={type} onChange={(e) => setType(e.target.value)}>
           <option value="">All types</option>
           {Object.entries(TYPE_LABEL).map(([value, label]) => (
             <option key={value} value={value}>
@@ -167,11 +167,11 @@ function AuditLog() {
   const filtered = filters.userId !== null || filters.action !== "" || filters.from !== "" || filters.to !== "";
   return (
     <>
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1">
+      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="label-mono">Person</span>
           <select
-            className="field max-w-[14rem]"
+            className="field sm:max-w-[14rem]"
             value={filters.userId ?? ""}
             onChange={(event) => {
               const value = event.target.value;
@@ -186,10 +186,10 @@ function AuditLog() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="label-mono">Action</span>
           <select
-            className="field max-w-[14rem]"
+            className="field sm:max-w-[14rem]"
             value={filters.action}
             onChange={(event) => {
               const value = event.target.value;
@@ -203,7 +203,7 @@ function AuditLog() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="label-mono">From</span>
           <input
             type="date"
@@ -215,7 +215,7 @@ function AuditLog() {
             }}
           />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex min-w-0 flex-col gap-1">
           <span className="label-mono">To</span>
           <input
             type="date"
