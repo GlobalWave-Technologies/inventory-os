@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChartNoAxesCombined } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, GhostButton } from "@/components/AppShell";
 import { EmptyState, LoadingPanels } from "@/components/Modal";
 import { useAuth } from "@/lib/auth";
@@ -102,12 +102,16 @@ function SalesTab({
   const [from, setFrom] = useState(daysAgo(30));
   const [to, setTo] = useState(isoDay(new Date()));
   const [groupBy, setGroupBy] = useState<SalesGroupBy>(locationId ? "product" : "branch");
+  // sync-group: picking a branch from the top dropdown switches to its products
+  useEffect(() => {
+    setGroupBy(locationId ? "product" : "branch");
+  }, [locationId]);
   const query = useSalesBreakdown({ from, to, locationId, groupBy, enabled: true });
   const data = query.data;
   const badRange = from > to;
   // Admins get the total for all branches. Managers get a total once they pick one of their branches.
   const showTotals = isAdmin || locationId !== null;
-  const trend = useSalesBreakdown({ from, to, locationId, groupBy: "day", enabled: showTotals });
+  const trend = useSalesBreakdown({ from, to, locationId, groupBy: "day", enabled: showTotals, max: 400 });
   const rows =
     data && groupBy === "branch" && !isAdmin ? data.items.filter((row) => branches.some((b) => b.id === Number(row.key))) : (data?.items ?? []);
   const total = data && profitOrLoss(data.totals.profit);

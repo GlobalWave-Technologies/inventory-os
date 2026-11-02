@@ -28,15 +28,15 @@ export type SalesReportData = {
   truncated: boolean;
 };
 
-export function useSalesBreakdown(input: { from: string; to: string; locationId: number | null; groupBy: SalesGroupBy; enabled: boolean }) {
+export function useSalesBreakdown(input: { from: string; to: string; locationId: number | null; groupBy: SalesGroupBy; enabled: boolean; max?: number }) {
   const hydrated = useHydrated();
   const { user } = useAuth();
-  const { from, to, locationId, groupBy, enabled } = input;
+  const { from, to, locationId, groupBy, enabled, max = 200 } = input;
   return useQuery({
-    queryKey: ["profit-loss", from, to, locationId, groupBy],
+    queryKey: ["profit-loss", from, to, locationId, groupBy, max],
     queryFn: () =>
       apiRequest<SalesReportData>(
-        `/reports/sales?from=${from}&to=${to}&groupBy=${groupBy}&limit=200${locationId ? `&locationId=${locationId}` : ""}`,
+        `/reports/sales?from=${from}&to=${to}&groupBy=${groupBy}&limit=${max}${locationId ? `&locationId=${locationId}` : ""}`,
       ),
     enabled: enabled && hydrated && !!user && from <= to,
   });
