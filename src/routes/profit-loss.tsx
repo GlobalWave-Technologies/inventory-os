@@ -148,6 +148,9 @@ function SalesTab({
         </select>
       </div>
       {badRange && <Notice>The start date must not be after the end date.</Notice>}
+      {showTotals && !badRange && !trend.isError && (
+        <ProfitChart from={from} to={to} rows={trend.data?.items} truncated={trend.data?.truncated ?? false} loading={trend.isPending} />
+      )}
       {query.isLoading && !badRange && <LoadingPanels count={3} />}
       {query.isError && <Notice>Could not load the report. The range can be at most one year.</Notice>}
       {data && (
@@ -167,7 +170,6 @@ function SalesTab({
             </>
           )}
           {trend.isError && <Notice>Could not load the graph.</Notice>}
-          {trend.data && <ProfitChart from={from} to={to} rows={trend.data.items} truncated={trend.data.truncated} />}
           {rows.length === 0 && (
             <EmptyState icon={<ChartNoAxesCombined className="size-6" />} title="No sales in this range" body="Try a wider date range." />
           )}

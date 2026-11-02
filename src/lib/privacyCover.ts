@@ -23,6 +23,11 @@ export function startPrivacyCover() {
   document.body.appendChild(cover);
 
   const show = () => {
+    // login-safe: the sign-in and reset screens show nothing private, and the phone's saved-password
+    // sheet makes the window lose focus. Covering the page then blocks autofill.
+    if (document.querySelector('input[type="password"]')) return;
+    const a = document.activeElement;
+    if ((a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) && document.visibilityState !== "hidden") return;
     cover.style.display = "flex";
   };
   const hide = () => {

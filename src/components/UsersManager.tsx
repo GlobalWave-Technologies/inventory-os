@@ -84,15 +84,13 @@ export function UsersManager() {
     );
 
   function showLink(result: LinkResult, who: string, kind: "activation" | "reset") {
-    if (result.emailSent) {
-      toast.success(`Email sent to ${who}.`);
-      return;
-    }
     const token = kind === "activation" ? result.activationToken : result.resetToken;
     if (!token) {
-      toast.error("The server did not return a link. Try again.");
+      if (result.emailSent) toast.success(`Email queued for ${who}.`);
+      else toast.error("The server did not return a link. Try again.");
       return;
     }
+    if (result.emailSent) toast.success(`Email queued for ${who}.`);
     const path = kind === "activation" ? "activate" : "reset-password";
     const expiry =
       kind === "activation"
@@ -101,7 +99,9 @@ export function UsersManager() {
     setShownLink({
       title: kind === "activation" ? `Activation link for ${who}` : `Password reset link for ${who}`,
       url: `${window.location.origin}/${path}?token=${encodeURIComponent(token)}`,
-      note: `Valid for ${expiry}. It is shown only once, so copy it now and send it to ${who}.`,
+      note: result.emailSent
+        ? `An email is on its way to ${who}. If it does not arrive, copy this link and send it yourself. Valid for ${expiry}. It is shown only once.`
+        : `Valid for ${expiry}. It is shown only once, so copy it now and send it to ${who}.`,
     });
   }
 
