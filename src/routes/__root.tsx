@@ -1,3 +1,4 @@
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { AppBoot } from "../components/AppBoot";
 import { RoutePreloader, RouteProgress } from "../components/RouteHelpers";
 import { OfflineBanner } from "../components/OfflineBanner";
@@ -42,7 +43,8 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error: caught, reset }: ErrorComponentProps) {
+  const error = caught instanceof Error ? caught : new Error(String(caught));
   console.error(error);
   reportProblem({ kind: "react_crash", message: error.message });
   const router = useRouter();

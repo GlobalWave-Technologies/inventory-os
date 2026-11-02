@@ -142,7 +142,7 @@ export function refreshTokens(): Promise<boolean> {
 
   const run = () => doRefresh();
   const locked = navigator.locks
-    ? navigator.locks.request("stockline-refresh", run)
+    ? (navigator.locks.request("stockline-refresh", run) as unknown as Promise<boolean>)
     : run();
 
   refreshInFlight = locked.finally(() => {

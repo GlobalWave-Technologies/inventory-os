@@ -52,10 +52,14 @@ function Fields({
           required
           type="email"
           autoComplete="username"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           value={email}
           onChange={(event) => onEmailChange(event.target.value)}
           className={input}
-          placeholder="name@stockline.demo"
+          placeholder="name@company.com"
         />
       </div>
       <div>
@@ -68,6 +72,9 @@ function Fields({
             required
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
             className={`${input} pr-14`}
