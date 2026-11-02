@@ -1,110 +1,64 @@
-# Inventory Harmony
+StockLine Inventory OS
+StockLine Inventory OS is a web-based inventory management system for businesses that hold stock across one or more branches. It tracks what each branch has, how stock moves between branches, what is sold and returned, and what it is all worth. It is designed for everyday use by staff on the shop floor, as well as by managers and owners who need a clear view of the whole business. All money values are shown in Ghana cedis (GH₵).
 
-Prompt:
+The application runs in any modern browser on a computer or phone, and it can be installed on a device like a regular app. It connects to a central server, so everyone in the business works from the same up-to-date information wherever they sign in.
 
-Build a modern, visually polished inventory management web app with tasteful 3D-style animations and micro-interactions — it should feel like a premium SaaS product, not a generic AI-generated template. Avoid boilerplate Bootstrap/Material defaults; use custom styling, intentional typography, a cohesive color palette, smooth transitions (Framer Motion or GSAP), and subtle depth (soft shadows, layered cards, parallax or tilt-on-hover effects) rather than literal 3D models unless specified.
+Who uses it
+StockLine has three main roles, and each one sees only what it needs.
 
-Core functionality:
+Administrators manage the whole workspace. They see every branch, set up products and categories, add suppliers, manage the team, and control settings and permissions.
 
-Users can create custom categories (e.g., "Doors", "Goats", "Laptops") — fully dynamic, not hardcoded.
+Managers look after operations at their branches. They can manage products, review their team's sales, submit branch summaries and open the financial reports. Administrators can switch this manager layer on or off for the whole business; when it is off, managers use the same screens as staff.
 
-For each category, users define custom attributes/fields (e.g., Doors → material, width, height; Goats → breed, age, weight).
+Staff work within the branches they are assigned to. A staff member who belongs to more than one branch chooses which branch to work in after signing in and can switch at any time. Staff do not see cost prices or profit figures.
 
-Users can add items under a category, filling in the custom fields plus common fields: name, quantity, location, value, date added, status.
+Products and categories
+Every business stocks different things, so StockLine does not assume a fixed product list. Administrators create categories, such as Laptops, Doors or Livestock, and give each category its own custom fields. A field can hold text, a number, a date or a choice from a list, and it can be marked as required. A Doors category might record material, width and height, while a Laptops category records processor, memory and storage.
 
-Full CRUD (create, read, update, delete) for categories, attributes, and items.
+Each product belongs to a category and carries a name, SKU, optional barcode, notes, selling price and cost price, plus the custom fields of its category. Products are shared across all branches, while the quantity held is tracked separately for each branch.
 
-A dashboard showing: total items, total stock value, low-stock alerts, recent activity/movement log.
+Inventory
+The Inventory screen shows the stock held at the current branch, with search and filters. From here, users record stock coming in and going out, set a low-stock threshold for each product, and view each product's movement history. Products that fall below their threshold are flagged so they can be reordered before they run out.
 
-Search and filter items by category, name, or custom attribute values.
+Adjustments
+When stock needs correcting because of damage, loss or a counting error, users submit an adjustment. Adjustments wait for approval before they change stock levels, and an approver can accept or reject each one. This keeps an accountable record of every correction and prevents silent changes to the figures.
 
-Stock adjustment history (who changed what, when, and why).
+Transfers between branches
+Stock moves from one branch to another through a transfer, which passes through clear stages. It is requested, approved or rejected, dispatched by the sending branch and received by the destination branch, and it can be cancelled before it completes. The navigation shows how many transfers are waiting for approval, dispatch or receipt, so nothing is left in transit unnoticed.
 
-Tech preferences:
+Stocktaking
+StockLine supports a weekly physical stock count for each branch. Staff start a count, enter the quantity they find for each product and submit it. The system compares the counted quantities with recorded stock and creates adjustments for any differences. The screen shows whether each branch has started or submitted its count for the week.
 
-Frontend: React (or Next.js), Tailwind CSS, Framer Motion for animations
+Sales and returns
+Staff submit a daily sales report listing what they sold. Managers review their team's reports and submit a summary for the branch, and administrators can inspect reports across all branches. Returns are recorded against sales, and the system checks how many units were sold and how many were already returned, so more items cannot be returned than were sold.
 
-Backend/data: [specify — e.g., Supabase, Firebase, Node + PostgreSQL, or local state for a demo]
+Purchasing
+The Purchasing section covers restocking. Team members raise stock requests, which are approved or rejected. Purchase orders are raised with suppliers, and when the goods arrive the order is marked as received; orders can also be cancelled. Administrators maintain the list of suppliers the business buys from.
 
-Use a flexible schema: an Items table with core fields + an ItemAttributes (EAV-style) table or JSON custom_fields column so any category can have its own attribute set without schema changes.
+Reports
+Managers and administrators can open three reports, each for a single branch or for the whole business:
 
-Design direction:
+Profit and loss: revenue, cost and profit over a chosen date range, with a chart and a detailed breakdown.
+Stock value: the value of the stock currently held, grouped for easy comparison.
+Slow movers: products that have not sold within a chosen number of days, highlighting stock that is tying up money.
+Dashboard, activity and notifications
+The dashboard gives an at-a-glance view of the current branch or the whole business: the number of products and branches, stock value, low-stock and out-of-stock counts, pending adjustments, transfer work waiting, and the most recent stock movements.
 
-Distinct visual identity — not the default AI blue-and-white SaaS look. Pick a bold or unexpected palette and a real typographic hierarchy.
+The activity log records stock movements and user actions, showing who did what and when, with filters to narrow the history. Notifications alert users to events that need their attention, and unread counts appear in the navigation.
 
-Animated transitions when switching categories, adding items, or opening detail views (card expand, staggered list entry, etc.)
+Team and access management
+Administrators add team members, give each one a role and one or more branches, and can deactivate accounts that are no longer needed. New users receive an activation link to set their own password, and administrators can issue password-reset links. Users can change their own password from their account settings, which also signs them out of their other sessions.
 
-Empty states, loading states, and success/error feedback should all be designed, not afterthoughts.
+Security
+Sign-in and permissions are handled by the server rather than the browser. The short-lived access token is kept only in memory, while the longer-lived session token is stored in a secure cookie that scripts on the page cannot read. Requests carry protection against cross-site request forgery, and sessions refresh safely even when several tabs are open. When a session expires, the user is returned to the sign-in screen.
 
-Responsive layout (desktop-first is fine, but should degrade gracefully on mobile).
+Design and experience
+The interface uses a deep teal and green palette with light and dark modes, smooth transitions, and clear loading, empty and error states. On a computer, navigation sits in a sidebar; on a phone, it moves to a bottom bar with a menu for the remaining sections. Wide tables scroll sideways on small screens so nothing is cut off.
 
-A few things worth deciding before you use this — want help settling them?
+Technology
+The front end is built with React 19 and TypeScript on TanStack Start and TanStack Router, with TanStack Query for fetching and caching data. Styling uses Tailwind CSS 4 and Radix UI components, animation uses Motion, charts use Recharts, and icons come from Lucide. The front end is deployed on Vercel and communicates with a separate inventory API.
 
-What should this run on?only frontend now
+Summary
+StockLine Inventory OS brings stock control, branch transfers, stocktaking, sales, purchasing and financial reporting together in one shared system. Its flexible categories adapt to whatever a business sells, its approval steps keep records accountable, and its role-based access ensures each person sees what they need and nothing they should not.
 
-Is this for a course project or a personal/business tool?Personal or business use
-
-Got it — frontend-only, for a real personal/business tool (not just a demo). Here's the refined prompt:
-
-Prompt:
-
-Build a modern, visually polished inventory management web app — frontend-only, no backend required. It should feel like a premium SaaS product, not a generic AI-generated template. Avoid boilerplate Bootstrap/Material defaults; use custom styling, intentional typography, a cohesive color palette, smooth transitions (Framer Motion), and subtle depth (soft shadows, layered cards, tilt-on-hover, staggered animations) rather than literal 3D models.
-
-Data persistence: Since there's no backend, store all data in the browser using IndexedDB (preferred over localStorage for larger datasets and structured queries) — with a clean data-access layer so it could be swapped for a real backend later without rewriting the UI.
-
-Core functionality:
-
-Users can create custom categories (e.g., "Doors", "Goats", "Laptops") — fully dynamic, not hardcoded.
-
-For each category, users define custom attributes/fields (e.g., Doors → material, width, height; Goats → breed, age, weight) with types (text, number, date, dropdown).
-
-Users add items under a category, filling in the custom fields plus common fields: name, quantity, location, value, date added, status.
-
-Full CRUD (create, read, update, delete) for categories, attributes, and items.
-
-A dashboard showing: total items, total stock value, low-stock alerts, recent activity/movement log.
-
-Search and filter items by category, name, or any custom attribute value.
-
-Stock adjustment history (what changed and when) — stored locally per item.
-
-Import/export data as JSON or CSV, so users can back up or move their data since it's stored only in the browser.
-
-Tech stack:
-
-React (or Next.js in static/client-only mode)
-
-Tailwind CSS
-
-Framer Motion for animations
-
-IndexedDB via a lightweight wrapper (e.g., idb or Dexie.js)
-
-Design direction:
-
-Distinct visual identity — not the default AI blue-and-white SaaS look. Pick a bold or unexpected palette and real typographic hierarchy.
-
-Animated transitions when switching categories, adding items, opening detail views (card expand, staggered list entry, etc.)
-
-Well-designed empty states, loading states, and success/error toasts.
-
-Responsive layout, desktop-first but usable on mobile.
-
-Clear warning/notice somewhere in the UI (e.g., settings) that data lives in this browser only, with a prominent export/backup option.
-
-## API connection
-
-Authentication uses the inventory API. Set `VITE_API_URL` to the API origin before starting the frontend. The API must allow the frontend origin in `CORS_ORIGINS`.
-
-Accounts are created by an administrator. Use the activation link issued by the administrator to set an initial password; self-registration and local demo credentials are not available.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+The server code isn't in this folder, so I described its behaviour from how the app calls it. The Security section is based on the front-end code; check it with whoever runs the server before you show it to clients.
