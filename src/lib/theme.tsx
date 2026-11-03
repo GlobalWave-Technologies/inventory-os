@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMode((prev) => {
       const next: Mode = prev === "dark" ? "light" : "dark";
       localStorage.setItem("ledger-theme", next);
-      document.documentElement.classList.toggle("dark", next !== "light");
+      withSmoothSwitch(() => document.documentElement.classList.toggle("dark", next !== "light"));
       document.documentElement.style.colorScheme = next;
       return next;
     });
@@ -40,4 +40,12 @@ export function useHydrated() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   return hydrated;
+}
+
+// Fades the colours for a moment while the theme flips, so the change is smooth instead of a hard flash.
+function withSmoothSwitch(apply: () => void) {
+  const root = document.documentElement;
+  root.classList.add("theme-switching");
+  apply();
+  window.setTimeout(() => root.classList.remove("theme-switching"), 450);
 }

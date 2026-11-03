@@ -1,3 +1,4 @@
+import { DeleteButton } from "@/components/DeleteButton";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { Building2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -237,6 +238,7 @@ function BranchRow({
         >
           {branch.isActive ? "Archive" : "Restore"}
         </button>
+        <DeleteButton type="branch" id={branch.id} name={branch.name} />
       </div>
     </div>
   );

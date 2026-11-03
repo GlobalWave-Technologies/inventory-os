@@ -1,3 +1,4 @@
+import { DeletionRequests, RecycleBin } from "@/components/RecycleBin";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -39,6 +40,8 @@ function SettingsPage() {
         <div className="flex flex-col gap-4">
           <PasswordManager />
           <EmailNotifications />
+        <DeletionRequests />
+        <RecycleBin />
           <InstallApp />
         </div>
       </AppShell>
@@ -50,6 +53,8 @@ function SettingsPage() {
       <div className="flex flex-col gap-4">
         <PasswordManager />
         <EmailNotifications />
+        <DeletionRequests />
+        <RecycleBin />
         <InstallApp />
         <ManagerSectionControl
           enabled={managerSectionEnabled}

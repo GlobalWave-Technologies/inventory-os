@@ -1,3 +1,4 @@
+import { DeleteButton } from "@/components/DeleteButton";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, Boxes, Package, Pencil, Plus } from "lucide-react";
@@ -228,6 +229,7 @@ function ProductsPage() {
                         >
                           <Archive className="size-3.5" />
                         </button>
+                        <DeleteButton type="category" id={category.id} name={category.name} variant="icon" />
                       </div>
                     )}
                   </div>
@@ -394,6 +396,7 @@ function ProductsPage() {
                         >
                           {product.isActive ? "Archive" : "Restore"}
                         </button>
+                        <DeleteButton type="product" id={product.id} name={product.name} />
                       </div>
                     )}
                   </div>

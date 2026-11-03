@@ -1,3 +1,4 @@
+import { DeleteButton } from "@/components/DeleteButton";
 import { askConfirm } from "@/components/ConfirmDialog";
 import { Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -278,7 +279,8 @@ export function UsersManager() {
                     </button>
                   )}
                   {!member.pending && (
-                    <button
+                    <>
+<button
                       onClick={() => void toggleActive(member)}
                       disabled={busy}
                       className={`flex-1 rounded-lg border border-hair px-2.5 py-2 text-xs sm:flex-none ${
@@ -287,6 +289,8 @@ export function UsersManager() {
                     >
                       {member.isActive ? "Deactivate" : "Reactivate"}
                     </button>
+                    <DeleteButton type="user" id={member.id} name={member.name} />
+</>
                   )}
                 </div>
               )}

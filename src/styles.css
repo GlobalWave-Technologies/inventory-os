@@ -274,3 +274,19 @@ input[type="checkbox"]:checked::after {
 }
 input[type="checkbox"]:focus-visible { outline: 2px solid var(--aurora-a); outline-offset: 2px; }
 input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Smooth light/dark switch: colours fade only while the theme is changing. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-switching,
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease,
+      border-color 0.35s ease,
+      fill 0.35s ease,
+      stroke 0.35s ease,
+      box-shadow 0.35s ease !important;
+  }
+}

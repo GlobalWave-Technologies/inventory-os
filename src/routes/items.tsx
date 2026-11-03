@@ -1,3 +1,4 @@
+import { DeleteButton } from "@/components/DeleteButton";
 import { createFileRoute } from "@tanstack/react-router";
 import { Package, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -161,6 +162,9 @@ function InventoryPage() {
                     <GhostButton onClick={() => setAction({ kind: "stock", mode: "out", row })}>Remove</GhostButton>
                     <GhostButton onClick={() => setAction({ kind: "history", row })}>History</GhostButton>
                     <GhostButton onClick={() => setAction({ kind: "threshold", row })}>Level & shelf</GhostButton>
+                    {row.quantity === 0 && (
+                      <DeleteButton type="stock_record" id={row.locationId} productId={row.productId} name={row.name} />
+                    )}
                   </div>
                 </div>
               );

@@ -46,6 +46,7 @@ function NotificationsPage() {
     else if (n.linkType === "purchase_order") void navigate({ to: "/purchasing" });
     else if (n.linkType === "sales_report" || n.linkType === "return") void navigate({ to: "/sales" });
     else if (n.linkType === "account") void navigate({ to: "/settings" });
+    else if (n.linkType === "deletion") void navigate({ to: "/settings" });
   }
 
   async function readAllNow() {

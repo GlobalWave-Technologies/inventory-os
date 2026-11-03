@@ -32,6 +32,8 @@ const GROUPS: { title: string; kinds: { kind: string; label: string }[] }[] = [
       { kind: "stock_request_submitted", label: "A stock request needs approval" },
       { kind: "stock_request_approved", label: "A stock request was approved" },
       { kind: "stock_request_rejected", label: "A stock request was rejected" },
+      { kind: "deletion_requested", label: "A deletion needs approval" },
+      { kind: "deletion_decided", label: "A deletion was approved or rejected" },
     ],
   },
   {
@@ -84,6 +86,8 @@ const RECIPIENTS: Record<string, string> = {
   stock_request_submitted: "Approvers at that branch",
   stock_request_approved: "The person who asked",
   stock_request_rejected: "The person who asked",
+  deletion_requested: "Admins",
+  deletion_decided: "The person who asked",
   count_due: "Staff at that branch",
   count_overdue: "Managers, then admins",
   count_submitted: "Approvers at that branch",
