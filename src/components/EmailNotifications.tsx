@@ -1,3 +1,4 @@
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PrimaryButton } from "@/components/AppShell";
@@ -106,6 +107,7 @@ export function EmailNotifications() {
   const save = useSingleFlight();
   const [selected, setSelected] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const saved = kinds.data?.emailKinds;
   useEffect(() => {
@@ -119,8 +121,15 @@ export function EmailNotifications() {
 
   return (
     <section className="glass rounded-2xl p-4 sm:p-5">
-      <p className="label-mono">Alerts</p>
-      <h2 className="mt-1 font-display text-lg font-semibold text-strong">Email notifications</h2>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 text-left">
+        <span>
+          <span className="label-mono block">Alerts</span>
+          <span className="mt-1 block font-display text-lg font-semibold text-strong">Email notifications</span>
+        </span>
+        <ChevronRight className={`size-5 shrink-0 text-fog transition-transform ${open ? "rotate-90" : ""}`} />
+      </button>
+      {open && (
+      <div>
       <p className="mt-1 max-w-2xl text-sm text-fog/75">
         Emails only say that something needs your attention. They never include product names, quantities, prices or
         amounts. Those stay inside the app, behind sign-in. Everything still shows in Notifications either way.
@@ -199,6 +208,8 @@ export function EmailNotifications() {
             </>
           )}
         </div>
+      )}
+      </div>
       )}
     </section>
   );

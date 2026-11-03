@@ -31,8 +31,10 @@ export function startPrivacyCover() {
   // The window also loses focus when the phone's saved-password sheet or the keyboard's suggestions open.
   // That is not the app leaving the screen, so the early focus signal is ignored while a field is being used.
   const showOnBlur = () => {
+    // autofill-only: skip just when typing in a text-like box on a screen with a password field.
     const field = document.activeElement;
-    if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) return;
+    const typing = field instanceof HTMLInputElement && ["text", "email", "password", "search", "tel"].includes(field.type);
+    if (typing && document.querySelector('input[type="password"]')) return;
     show();
   };
 
