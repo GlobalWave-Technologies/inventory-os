@@ -82,6 +82,7 @@ export function PasswordTokenScreen({
             <input
               className="field mt-1"
               type="password"
+              maxLength={128}
               autoComplete="new-password"
               minLength={12}
               value={password}
@@ -94,6 +95,7 @@ export function PasswordTokenScreen({
             <input
               className="field mt-1"
               type="password"
+              maxLength={128}
               autoComplete="new-password"
               minLength={12}
               value={confirmPassword}

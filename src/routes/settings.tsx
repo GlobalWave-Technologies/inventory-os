@@ -153,6 +153,7 @@ function PasswordManager() {
         <Field label="Current password">
           <input
             type="password"
+            maxLength={200}
             className="field"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -162,6 +163,7 @@ function PasswordManager() {
         <Field label="New password">
           <input
             type="password"
+            maxLength={128}
             className="field"
             value={nextPassword}
             onChange={(e) => setNextPassword(e.target.value)}
@@ -171,6 +173,7 @@ function PasswordManager() {
         <Field label="Confirm new password">
           <input
             type="password"
+            maxLength={128}
             className="field"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

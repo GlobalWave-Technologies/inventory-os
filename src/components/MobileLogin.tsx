@@ -71,6 +71,7 @@ function Fields({
             id="mobile-password"
             required
             type={showPassword ? "text" : "password"}
+            maxLength={200}
             autoComplete="current-password"
             autoCapitalize="none"
             autoCorrect="off"

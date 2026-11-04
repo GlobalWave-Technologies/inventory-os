@@ -163,6 +163,7 @@ export function LoginScreen() {
                   <input
                     required
                     type={showPassword ? "text" : "password"}
+                    maxLength={200}
                     autoComplete="current-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
