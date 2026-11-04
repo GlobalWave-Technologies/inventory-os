@@ -5,6 +5,14 @@
 // It is plain DOM on purpose: it must appear in the same instant the page is hidden, which is
 // faster than waiting for React to draw. Phones decide when they take that screenshot, so this
 // works on most devices but is a best effort, not a guarantee.
+// The logo is drawn right here instead of loaded from a file. A file has to be fetched, and at the
+// moment the phone freezes the page that fetch can fail, leaving a broken-image box in the snapshot.
+const LOGO_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 32 32" fill="none" aria-hidden="true">' +
+  '<path d="m16 3.5 12 6.7v11.6L16 28.5 4 21.8V10.2L16 3.5Z" stroke="#F2544F" stroke-width="2.3" stroke-linejoin="round"/>' +
+  '<path d="m4.5 10.5 11.5 6.6 11.5-6.6M16 17v11" stroke="#F2544F" stroke-width="2.3" stroke-linejoin="round"/>' +
+  "</svg>";
+
 let started = false;
 
 export function startPrivacyCover() {
@@ -15,11 +23,7 @@ export function startPrivacyCover() {
   cover.setAttribute("aria-hidden", "true");
   cover.style.cssText =
     "position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;background:var(--background,#0F1B27)";
-  const logo = document.createElement("img");
-  logo.src = "/stockline-logo.svg";
-  logo.alt = "";
-  logo.style.cssText = "width:72px;height:72px";
-  cover.appendChild(logo);
+  cover.innerHTML = LOGO_SVG;
   document.body.appendChild(cover);
 
   const show = () => {
