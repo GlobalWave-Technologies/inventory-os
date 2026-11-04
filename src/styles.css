@@ -290,3 +290,10 @@ input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
       box-shadow 0.35s ease !important;
   }
 }
+
+/* Whole-page cross-fade when the theme changes. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease;
+}

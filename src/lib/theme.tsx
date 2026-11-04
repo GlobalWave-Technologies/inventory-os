@@ -44,6 +44,17 @@ export function useHydrated() {
 
 // Fades the colours for a moment while the theme flips, so the change is smooth instead of a hard flash.
 function withSmoothSwitch(apply: () => void) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    apply();
+    return;
+  }
+  // Best: the browser cross-fades the whole page (gradients, shadows and charts included).
+  const doc = document as Document & { startViewTransition?: (update: () => void) => unknown };
+  if (typeof doc.startViewTransition === "function") {
+    doc.startViewTransition(apply);
+    return;
+  }
+  // Older browsers: fade the colours for a moment instead.
   const root = document.documentElement;
   root.classList.add("theme-switching");
   apply();
