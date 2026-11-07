@@ -19,6 +19,11 @@ function ForgotPasswordPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (saving) return;
+    const clean = email.trim();
+    if (clean.length < 5 || clean.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clean)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
     setSaving(true);
     try {
       await apiPost("/auth/forgot-password", { email: email.trim() });
@@ -56,6 +61,9 @@ function ForgotPasswordPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
+                  maxLength={254}
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
               </label>
               <button
