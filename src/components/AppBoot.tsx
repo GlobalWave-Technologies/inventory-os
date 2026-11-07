@@ -1,3 +1,4 @@
+import { IdleSignOut } from "@/components/IdleSignOut";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { apiRequest } from "@/lib/api";
@@ -81,5 +82,5 @@ export function AppBoot() {
     return () => window.clearTimeout(timer);
   }, [user, pathname]);
 
-  return null;
+  return <IdleSignOut />;
 }
