@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { apiRequest, clearTokens } from "@/lib/api";
+import { apiPost, apiRequest, clearTokens } from "@/lib/api";
 
 export function PasswordTokenScreen({
   token,
@@ -24,6 +24,23 @@ export function PasswordTokenScreen({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const isActivation = mode === "activate";
+
+  // Ask the server whether the link is still good, so an old link says so immediately.
+  // If the check itself can't be made (for example no signal), the form is shown and the server still decides on submit.
+  const [linkState, setLinkState] = useState<"checking" | "ok" | "bad">("checking");
+  useEffect(() => {
+    if (!keptToken) {
+      setLinkState("bad");
+      return;
+    }
+    let cancelled = false;
+    apiPost<{ valid: boolean }>("/auth/link-status", { token: keptToken, mode: isActivation ? "activate" : "reset" })
+      .then((r) => !cancelled && setLinkState(r.valid ? "ok" : "bad"))
+      .catch(() => !cancelled && setLinkState("ok"));
+    return () => {
+      cancelled = true;
+    };
+  }, [keptToken, isActivation]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -62,6 +79,31 @@ export function PasswordTokenScreen({
     } finally {
       setSaving(false);
     }
+  }
+
+  if (linkState !== "ok") {
+    return (
+      <main className="grid min-h-screen place-items-center bg-background px-4 py-8 text-foreground">
+        <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">StockLine account</p>
+          {linkState === "checking" ? (
+            <p className="mt-3 text-sm text-muted-foreground">Checking your link…</p>
+          ) : (
+            <>
+              <h1 className="mt-3 text-2xl font-semibold">This link has expired</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {isActivation
+                  ? "It was already used, or it is too old. Ask your administrator to send you a new activation link."
+                  : "It was already used, or it is too old. Go to the sign-in page and choose “Forgot password” for a new one."}
+              </p>
+              <Link to="/" className="mt-6 inline-block text-sm font-medium text-primary">
+                Back to sign in
+              </Link>
+            </>
+          )}
+        </section>
+      </main>
+    );
   }
 
   return (
